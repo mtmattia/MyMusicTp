@@ -30,6 +30,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.cappielloantonio.tempo.R;
 import com.cappielloantonio.tempo.databinding.FragmentAlbumPageBinding;
 import com.cappielloantonio.tempo.glide.CustomGlideRequest;
+import com.cappielloantonio.tempo.util.CoverPaletteUtil;
 import com.cappielloantonio.tempo.interfaces.ClickCallback;
 import com.cappielloantonio.tempo.model.Download;
 import com.cappielloantonio.tempo.service.MediaManager;
@@ -227,6 +228,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback, MenuPr
         albumPageViewModel.getAlbum().observe(getViewLifecycleOwner(), album -> {
             if (bind != null && album != null) {
                 CustomGlideRequest.Builder.from(requireContext(), album.getCoverArtId(), CustomGlideRequest.ResourceType.Album).build().into(bind.albumCoverImageView);
+                CoverPaletteUtil.applyGradient(this, album.getCoverArtId(), bind.albumInfoSector, bind.animToolbar);
             }
         });
     }

@@ -304,15 +304,8 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
             }, 1200);
         });
 
-        bind.homeShuffleAllButton.setOnClickListener(v -> playShuffled(homeViewModel.getRandomShuffleSample()));
-        bind.homeChipShuffleStarred.setOnClickListener(v -> playShuffled(homeViewModel.getStarredShuffleSample()));
-        bind.homeChipRecentlyPlayed.setOnClickListener(v -> openAlbumList(Constants.ALBUM_RECENTLY_PLAYED));
-        bind.homeChipMostPlayed.setOnClickListener(v -> openAlbumList(Constants.ALBUM_MOST_PLAYED));
-        bind.homeChipRecentlyAdded.setOnClickListener(v -> openAlbumList(Constants.ALBUM_RECENTLY_ADDED));
-        bind.homeChipCustomize.setOnClickListener(v -> {
-            HomeRearrangementDialog dialog = new HomeRearrangementDialog();
-            dialog.show(requireActivity().getSupportFragmentManager(), null);
-        });
+        bind.homeShuffleAllCard.setOnClickListener(v -> playShuffled(homeViewModel.getRandomShuffleSample()));
+        bind.homeShuffleStarredCard.setOnClickListener(v -> playShuffled(homeViewModel.getStarredShuffleSample()));
     }
 
     private void playShuffled(LiveData<List<Child>> source) {
@@ -336,12 +329,6 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                 activity.setBottomSheetInPeek(true);
             }
         });
-    }
-
-    private void openAlbumList(String key) {
-        Bundle bundle = new Bundle();
-        bundle.putString(key, key);
-        activity.navController.navigate(R.id.action_homeFragment_to_albumListPageFragment, bundle);
     }
 
     private void initSyncStarredView() {
@@ -849,6 +836,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     public void reorder() {
         if (bind != null && homeViewModel.getHomeSectorList() != null) {
             bind.homeLinearLayoutContainer.removeAllViews();
+            boolean shuffleSectorPlaced = false;
 
             for (HomeSector sector : homeViewModel.getHomeSectorList()) {
                 if (!sector.isVisible()) continue;
@@ -892,6 +880,8 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                         break;
                     case Constants.HOME_SECTOR_RECENTLY_ADDED:
                         bind.homeLinearLayoutContainer.addView(bind.homeRecentlyAddedAlbumsSector);
+                        bind.homeLinearLayoutContainer.addView(bind.homeShuffleSector);
+                        shuffleSectorPlaced = true;
                         break;
                     case Constants.HOME_SECTOR_PINNED_PLAYLISTS:
                         bind.homeLinearLayoutContainer.addView(bind.pinnedPlaylistsSector);
@@ -901,6 +891,9 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                         break;
                 }
             }
+
+            // "Recently added" hidden by the user: keep the shuffle cards at the top
+            if (!shuffleSectorPlaced) bind.homeLinearLayoutContainer.addView(bind.homeShuffleSector, 0);
 
             bind.homeLinearLayoutContainer.addView(bind.homeSectorRearrangementButton);
         }

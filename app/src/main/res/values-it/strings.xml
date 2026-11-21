@@ -141,9 +141,8 @@
 	<string name="home_title_top_songs">I tuoi migliori brani</string>
 	<string name="home_quick_shuffle_library">Riproduzione casuale</string>
 	<string name="home_quick_shuffle_starred">Preferiti in casuale</string>
-	<string name="home_quick_recently_played">Ascoltati di recente</string>
-	<string name="home_quick_most_played">Più ascoltati</string>
-	<string name="home_quick_recently_added">Aggiunti di recente</string>
+	<string name="home_quick_shuffle_library_subtitle">Tutta la libreria</string>
+	<string name="home_quick_shuffle_starred_subtitle">I brani che ami</string>
 	<string name="home_quick_nothing_to_play">Niente da riprodurre</string>
 	<string name="home_option_reorganize">Riorganizza</string>
 	<string name="label_dot_separator" translatable="false">•</string>
