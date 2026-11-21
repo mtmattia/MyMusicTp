@@ -2,7 +2,12 @@ name: PR Build
 
 on:
   pull_request:
+  push:
+    branches: [ main ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -22,14 +27,30 @@ jobs:
       - name: Build debug APK
         run: bash ./gradlew assembleTempoDebug
 
+      - name: Rename APK
+        run: cp app/build/outputs/apk/tempo/debug/*.apk app-tempo-debug.apk
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-tempo-debug
-          path: app/build/outputs/apk/tempo/debug/*.apk
+          path: app-tempo-debug.apk
 
       - name: Upload Room schemas
         uses: actions/upload-artifact@v4
         with:
           name: room-schemas
           path: app/schemas/
+
+      # Direct download link: pre-release "latest-main" always holds the newest build
+      - name: Publish pre-release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-main
+          target_commitish: ${{ github.sha }}
+          name: Ultima build (debug)
+          body: "Build di debug automatica, commit ${{ github.sha }}."
+          prerelease: true
+          make_latest: false
+          files: app-tempo-debug.apk
