@@ -222,6 +222,14 @@ class MediaService : MediaLibraryService() {
                     if (newPosition.mediaItem?.mediaMetadata?.extras?.getString("type") == Constants.MEDIA_TYPE_MUSIC) {
                         MediaManager.setLastPlayedTimestamp(newPosition.mediaItem)
                     }
+                } else if (reason == Player.DISCONTINUITY_REASON_SEEK &&
+                        oldPosition.mediaItemIndex != newPosition.mediaItemIndex &&
+                        oldPosition.mediaItem?.mediaMetadata?.extras?.getString("type") == Constants.MEDIA_TYPE_MUSIC &&
+                        MediaManager.isPlayedEnough(oldPosition.mediaItem, oldPosition.positionMs)
+                ) {
+                    // Manually skipped but listened long enough: count it as a play
+                    MediaManager.scrobble(oldPosition.mediaItem, true)
+                    MediaManager.saveChronology(oldPosition.mediaItem)
                 }
             }
         })

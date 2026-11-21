@@ -97,6 +97,10 @@ public class HomeViewModel extends AndroidViewModel {
         return songRepository.getRandomSample(100, null, null);
     }
 
+    public LiveData<List<Child>> getStarredShuffleSample() {
+        return songRepository.getStarredSongs(true, 200);
+    }
+
     public LiveData<List<Chronology>> getChronologySample(LifecycleOwner owner) {
         Calendar cal = Calendar.getInstance();
         String server = Preferences.getServerId();
@@ -323,6 +327,44 @@ public class HomeViewModel extends AndroidViewModel {
 
     public void refreshRecentlyPlayedAlbumList(LifecycleOwner owner) {
         albumRepository.getAlbums("recent", 20, null, null).observe(owner, recentlyPlayedAlbumSample::postValue);
+    }
+
+    public void refreshNewReleases(LifecycleOwner owner) {
+        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+
+        albumRepository.getAlbums("byYear", 500, currentYear, currentYear).observe(owner, albums -> {
+            if (albums != null) {
+                albums.sort(Comparator.comparing(AlbumID3::getCreated).reversed());
+                newReleasedAlbum.postValue(albums.subList(0, Math.min(20, albums.size())));
+            }
+        });
+    }
+
+    /**
+     * Sectors that depend on what the user has been listening to. Cheap enough to
+     * reload whenever the home comes back in view or a track changes.
+     */
+    public void refreshListeningSectors(LifecycleOwner owner) {
+        refreshRecentlyPlayedAlbumList(owner);
+        refreshMostPlayedAlbums(owner);
+    }
+
+    /**
+     * Full reload, used by pull-to-refresh.
+     */
+    public void refreshAll(LifecycleOwner owner) {
+        refreshDiscoverySongSample(owner);
+        refreshSimilarSongSample(owner);
+        refreshRadioArtistSample(owner);
+        refreshBestOfArtist(owner);
+        refreshStarredTracks(owner);
+        refreshStarredAlbums(owner);
+        refreshStarredArtists(owner);
+        refreshNewReleases(owner);
+        refreshMostRecentlyAddedAlbums(owner);
+        refreshListeningSectors(owner);
+        getPinnedPlaylists(owner);
+        if (Preferences.isSharingEnabled()) refreshShares(owner);
     }
 
     public void refreshShares(LifecycleOwner owner) {

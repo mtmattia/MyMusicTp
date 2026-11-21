@@ -91,4 +91,14 @@
         <item name="android:textFontWeight">400</item>
         <item name="android:textColor">@color/titleTextColor</item>
     </style>
+
+    <!-- Section "see all" / action links on the home: tinted so they read as tappable -->
+    <style name="HomeSectionAction" parent="InterFontFamily">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textFontWeight">600</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+    </style>
 </resources>

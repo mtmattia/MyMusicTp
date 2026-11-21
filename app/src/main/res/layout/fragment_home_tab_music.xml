@@ -1,11 +1,97 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/fragment_home_nested_scroll_view"
+    android:id="@+id/home_swipe_refresh"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+<androidx.core.widget.NestedScrollView
+    android:id="@+id/fragment_home_nested_scroll_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+    <!--  Quick actions: always visible, independent of the sector list  -->
+    <LinearLayout
+        android:id="@+id/home_quick_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="12dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/home_shuffle_all_button"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="16dp"
+            android:text="@string/home_quick_shuffle_library"
+            android:textSize="16sp"
+            app:cornerRadius="28dp"
+            app:icon="@drawable/ic_shuffle"
+            app:iconGravity="textStart"
+            app:iconPadding="12dp" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:clipToPadding="false"
+            android:paddingHorizontal="16dp"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleLine="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/home_chip_shuffle_starred"
+                    style="@style/Widget.Material3.Chip.Assist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/home_quick_shuffle_starred"
+                    app:chipIcon="@drawable/ic_favorite" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/home_chip_recently_played"
+                    style="@style/Widget.Material3.Chip.Assist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/home_quick_recently_played"
+                    app:chipIcon="@drawable/ic_history" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/home_chip_most_played"
+                    style="@style/Widget.Material3.Chip.Assist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/home_quick_most_played"
+                    app:chipIcon="@drawable/ic_star" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/home_chip_recently_added"
+                    style="@style/Widget.Material3.Chip.Assist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/home_quick_recently_added" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/home_chip_customize"
+                    style="@style/Widget.Material3.Chip.Assist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/home_option_reorganize"
+                    app:chipIcon="@drawable/ic_sort_list" />
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/home_linear_layout_container"
@@ -137,7 +223,7 @@
 
                 <TextView
                     android:id="@+id/discovery_text_view_clickable"
-                    style="@style/TitleMedium"
+                    style="@style/HomeSectionAction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="8dp"
@@ -363,7 +449,7 @@
 
                 <TextView
                     android:id="@+id/starred_tracks_text_view_clickable"
-                    style="@style/TitleMedium"
+                    style="@style/HomeSectionAction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="8dp"
@@ -412,7 +498,7 @@
 
                 <TextView
                     android:id="@+id/starred_albums_text_view_clickable"
-                    style="@style/TitleMedium"
+                    style="@style/HomeSectionAction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="8dp"
@@ -461,7 +547,7 @@
 
                 <TextView
                     android:id="@+id/starred_artists_text_view_clickable"
-                    style="@style/TitleMedium"
+                    style="@style/HomeSectionAction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="8dp"
@@ -591,7 +677,7 @@
 
                 <TextView
                     android:id="@+id/most_played_albums_text_view_clickable"
-                    style="@style/TitleMedium"
+                    style="@style/HomeSectionAction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="8dp"
@@ -644,7 +730,7 @@
 
                 <TextView
                     android:id="@+id/recently_played_albums_text_view_clickable"
-                    style="@style/TitleMedium"
+                    style="@style/HomeSectionAction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="8dp"
@@ -698,7 +784,7 @@
 
                 <TextView
                     android:id="@+id/recently_added_albums_text_view_clickable"
-                    style="@style/TitleMedium"
+                    style="@style/HomeSectionAction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="8dp"
@@ -790,5 +876,6 @@
             android:visibility="gone"
             tools:visibility="visible"/>
     </LinearLayout>
+    </LinearLayout>
 </androidx.core.widget.NestedScrollView>
-
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
