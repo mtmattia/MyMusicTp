@@ -7,6 +7,8 @@ import android.net.NetworkCapabilities;
 
 import com.cappielloantonio.tempo.App;
 
+import java.io.IOException;
+
 import okhttp3.Interceptor;
 import okhttp3.Request;
 
@@ -29,16 +31,39 @@ public class CacheUtil {
 
     public Interceptor offlineInterceptor = chain -> {
         Request request = chain.request();
-        if (!isConnected()) {
-            request = request.newBuilder()
-                    .header("Cache-Control", "public, only-if-cached, max-stale=" + maxStale)
-                    .removeHeader("Pragma")
-                    .build();
+
+        if (!hasNetwork()) {
+            return chain.proceed(toCacheOnly(request));
         }
-        return chain.proceed(request);
+
+        try {
+            return chain.proceed(request);
+        } catch (IOException e) {
+            // Network present but the server is unreachable (network just switched,
+            // validation pending, dead socket...): serve the cached copy if there is one,
+            // otherwise surface the original error so callers can react to it.
+            if (!"GET".equals(request.method())) throw e;
+
+            okhttp3.Response cached = chain.proceed(toCacheOnly(request));
+            if (cached.code() == 504) {
+                cached.close();
+                throw e;
+            }
+            return cached;
+        }
     };
 
-    private boolean isConnected() {
+    private Request toCacheOnly(Request request) {
+        return request.newBuilder()
+                .header("Cache-Control", "public, only-if-cached, max-stale=" + maxStale)
+                .removeHeader("Pragma")
+                .build();
+    }
+
+    // Only INTERNET is required: VALIDATED is missing for a few seconds after every network
+    // change and permanently on LAN-only/VPN setups, which used to force cache-only requests
+    // (empty screens) even though the server was reachable.
+    private boolean hasNetwork() {
         ConnectivityManager connectivityManager = (ConnectivityManager) App.getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
         if (connectivityManager != null) {
@@ -46,10 +71,7 @@ public class CacheUtil {
 
             if (network != null) {
                 NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(network);
-
-                if (capabilities != null) {
-                    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
-                }
+                return capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
             }
         }
 

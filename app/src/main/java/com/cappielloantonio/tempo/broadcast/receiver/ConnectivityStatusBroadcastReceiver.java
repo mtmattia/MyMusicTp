@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
-import android.view.View;
 
 import androidx.annotation.OptIn;
 import androidx.media3.common.util.UnstableApi;
@@ -24,11 +23,7 @@ public class ConnectivityStatusBroadcastReceiver extends BroadcastReceiver {
         if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
             boolean noConnectivity = intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false);
 
-            if (noConnectivity) {
-                activity.bind.offlineModeTextView.setVisibility(View.VISIBLE);
-            } else {
-                activity.bind.offlineModeTextView.setVisibility(View.GONE);
-            }
+            activity.onConnectivityChanged(!noConnectivity);
         }
     }
 }

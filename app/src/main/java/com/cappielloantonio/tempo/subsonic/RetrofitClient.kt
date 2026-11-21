@@ -1,6 +1,7 @@
 package com.cappielloantonio.tempo.subsonic
 
 import com.cappielloantonio.tempo.App
+import com.cappielloantonio.tempo.BuildConfig
 import com.cappielloantonio.tempo.subsonic.utils.CacheUtil
 import com.google.gson.GsonBuilder
 import okhttp3.Cache
@@ -18,43 +19,46 @@ class RetrofitClient(subsonic: Subsonic) {
             .baseUrl(subsonic.url)
             .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss").create()))
             .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
-            .client(getOkHttpClient())
+            .client(okHttpClient)
             .build()
     }
 
-    private fun getOkHttpClient(): OkHttpClient {
-        val cacheUtil = CacheUtil(60, 60 * 60 * 24 * 30)
+    companion object {
+        // A single OkHttpClient shared by every API client: one connection pool and,
+        // above all, one disk Cache. Multiple Cache instances on the same directory
+        // corrupt each other and every server switch used to create a new batch of them.
+        @JvmStatic
+        val okHttpClient: OkHttpClient by lazy { buildOkHttpClient() }
 
-        // BrowsingClient 60
-        // MediaAnnotationClient 0
-        // MediaLibraryScanningClient 0
-        // MediaRetrievalClient 0
-        // PlaylistClient 0
-        // PodcastClient 60
-        // SearchClient 60
-        // SystemClient 60
-        // AlbumSongListClient 60
+        /**
+         * Drops pooled connections. Call it when the network changes: sockets opened on the
+         * previous network are dead and requests on them hang until the timeout fires.
+         */
+        @JvmStatic
+        fun evictConnections() {
+            okHttpClient.connectionPool.evictAll()
+        }
 
-        return OkHttpClient.Builder()
-            .callTimeout(2, TimeUnit.MINUTES)
-            .connectTimeout(20, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor(getHttpLoggingInterceptor())
-            .addInterceptor(cacheUtil.offlineInterceptor)
-            // .addNetworkInterceptor(cacheUtil.onlineInterceptor)
-            .cache(getCache())
-            .build()
-    }
+        private fun buildOkHttpClient(): OkHttpClient {
+            val cacheUtil = CacheUtil(60, 60 * 60 * 24 * 30)
 
-    private fun getHttpLoggingInterceptor(): HttpLoggingInterceptor {
-        val loggingInterceptor = HttpLoggingInterceptor()
-        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
-        return loggingInterceptor
-    }
+            return OkHttpClient.Builder()
+                .callTimeout(60, TimeUnit.SECONDS)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
+                .addInterceptor(getHttpLoggingInterceptor())
+                .addInterceptor(cacheUtil.offlineInterceptor)
+                .cache(Cache(App.getContext().cacheDir, 10L * 1024 * 1024))
+                .build()
+        }
 
-    private fun getCache(): Cache {
-        val cacheSize = 10 * 1024 * 1024
-        return Cache(App.getContext().cacheDir, cacheSize.toLong())
+        private fun getHttpLoggingInterceptor(): HttpLoggingInterceptor {
+            val loggingInterceptor = HttpLoggingInterceptor()
+            // BODY buffers and logs every full response (album lists can be huge): debug only.
+            loggingInterceptor.setLevel(if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.BASIC)
+            return loggingInterceptor
+        }
     }
 }

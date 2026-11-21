@@ -29,6 +29,7 @@ import com.cappielloantonio.tempo.service.MediaManager;
 import com.cappielloantonio.tempo.ui.activity.base.BaseActivity;
 import com.cappielloantonio.tempo.ui.dialog.ConnectionAlertDialog;
 import com.cappielloantonio.tempo.ui.dialog.GithubTempoUpdateDialog;
+import com.cappielloantonio.tempo.subsonic.RetrofitClient;
 import com.cappielloantonio.tempo.ui.dialog.ServerUnreachableDialog;
 import com.cappielloantonio.tempo.ui.fragment.PlayerBottomSheetFragment;
 import com.cappielloantonio.tempo.util.Constants;
@@ -340,11 +341,37 @@ public class MainActivity extends BaseActivity {
         }
     }
 
+    private long lastConnectivityPing = 0;
+
+    public void onConnectivityChanged(boolean connected) {
+        if (bind == null) return;
+
+        bind.offlineModeTextView.setVisibility(connected ? View.GONE : View.VISIBLE);
+
+        // Old sockets belong to the previous network: drop them, otherwise requests hang
+        // until timeout and the app looks frozen until it is restarted.
+        RetrofitClient.evictConnections();
+
+        if (connected && System.currentTimeMillis() - lastConnectivityPing > 3000) {
+            lastConnectivityPing = System.currentTimeMillis();
+            // Re-check which address (local/remote) is reachable on the new network.
+            pingServer();
+        }
+    }
+
+    private boolean pingInProgress = false;
+
     private void pingServer() {
         if (Preferences.getToken() == null) return;
 
+        // Overlapping pings (onResume + connectivity change) used to switch the
+        // local/remote address twice, ending up back on the unreachable one.
+        if (pingInProgress) return;
+
         if (Preferences.isInUseServerAddressLocal()) {
+            pingInProgress = true;
             mainViewModel.ping().observe(this, subsonicResponse -> {
+                pingInProgress = false;
                 if (subsonicResponse == null) {
                     Preferences.setServerSwitchableTimer();
                     Preferences.switchInUseServerAddress();
@@ -361,7 +388,9 @@ public class MainActivity extends BaseActivity {
                 App.refreshSubsonicClient();
                 pingServer();
             } else {
+                pingInProgress = true;
                 mainViewModel.ping().observe(this, subsonicResponse -> {
+                    pingInProgress = false;
                     if (subsonicResponse == null) {
                         if (Preferences.showServerUnreachableDialog()) {
                             ServerUnreachableDialog dialog = new ServerUnreachableDialog();

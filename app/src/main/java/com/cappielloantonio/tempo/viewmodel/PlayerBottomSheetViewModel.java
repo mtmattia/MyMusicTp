@@ -35,6 +35,7 @@ import com.cappielloantonio.tempo.util.Preferences;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @OptIn(markerClass = UnstableApi.class)
@@ -55,6 +56,14 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
     private final MutableLiveData<ArtistID3> liveArtist = new MutableLiveData<>(null);
     private final MutableLiveData<List<Child>> instantMix = new MutableLiveData<>(null);
     private boolean lyricsSyncState = true;
+
+    // Id of the track each async request belongs to. Responses arriving after the
+    // track changed are dropped, otherwise a slow reply for the previous song
+    // overwrites the current one (lyrics of another track, wrong info).
+    private String requestedMediaId;
+    private String requestedAlbumId;
+    private String requestedArtistId;
+    private String lyricsMediaId;
 
 
     public PlayerBottomSheetViewModel(@NonNull Application application) {
@@ -139,13 +148,35 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
         return lyricsListLiveData;
     }
 
+    /** Id of the track the current lyrics belong to. */
+    public String getLyricsMediaId() {
+        return lyricsMediaId;
+    }
+
     public void refreshMediaInfo(LifecycleOwner owner, Child media) {
+        if (media == null) return;
+
+        final String mediaId = media.getId();
+
+        // Same track re-emitted: keep what we have, no new request.
+        if (Objects.equals(mediaId, lyricsMediaId) && (lyricsLiveData.getValue() != null || lyricsListLiveData.getValue() != null)) {
+            return;
+        }
+
+        lyricsMediaId = mediaId;
+
+        // Clear immediately (main thread) so the previous track's lyrics never stay on screen.
+        lyricsLiveData.setValue(null);
+        lyricsListLiveData.setValue(null);
+
         if (OpenSubsonicExtensionsUtil.isSongLyricsExtensionAvailable()) {
-            openRepository.getLyricsBySongId(media.getId()).observe(owner, lyricsListLiveData::postValue);
-            lyricsLiveData.postValue(null);
+            openRepository.getLyricsBySongId(mediaId).observe(owner, lyricsList -> {
+                if (Objects.equals(mediaId, lyricsMediaId)) lyricsListLiveData.setValue(lyricsList);
+            });
         } else {
-            songRepository.getSongLyrics(media).observe(owner, lyricsLiveData::postValue);
-            lyricsListLiveData.postValue(null);
+            songRepository.getSongLyrics(media).observe(owner, lyrics -> {
+                if (Objects.equals(mediaId, lyricsMediaId)) lyricsLiveData.setValue(lyrics);
+            });
         }
     }
 
@@ -157,10 +188,14 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
         if (mediaType != null) {
             switch (mediaType) {
                 case Constants.MEDIA_TYPE_MUSIC:
-                    songRepository.getSong(mediaId).observe(owner, liveMedia::postValue);
+                    requestedMediaId = mediaId;
+                    songRepository.getSong(mediaId).observe(owner, song -> {
+                        if (Objects.equals(mediaId, requestedMediaId)) liveMedia.setValue(song);
+                    });
                     descriptionLiveData.postValue(null);
                     break;
                 case Constants.MEDIA_TYPE_PODCAST:
+                    requestedMediaId = null;
                     liveMedia.postValue(null);
                     break;
             }
@@ -175,7 +210,10 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
         if (mediaType != null) {
             switch (mediaType) {
                 case Constants.MEDIA_TYPE_MUSIC:
-                    albumRepository.getAlbum(AlbumId).observe(owner, liveAlbum::postValue);
+                    requestedAlbumId = AlbumId;
+                    albumRepository.getAlbum(AlbumId).observe(owner, album -> {
+                        if (Objects.equals(AlbumId, requestedAlbumId)) liveAlbum.setValue(album);
+                    });
                     break;
                 case Constants.MEDIA_TYPE_PODCAST:
                     liveAlbum.postValue(null);
@@ -192,7 +230,10 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
         if (mediaType != null) {
             switch (mediaType) {
                 case Constants.MEDIA_TYPE_MUSIC:
-                    artistRepository.getArtist(ArtistId).observe(owner, liveArtist::postValue);
+                    requestedArtistId = ArtistId;
+                    artistRepository.getArtist(ArtistId).observe(owner, artist -> {
+                        if (Objects.equals(ArtistId, requestedArtistId)) liveArtist.setValue(artist);
+                    });
                     break;
                 case Constants.MEDIA_TYPE_PODCAST:
                     liveArtist.postValue(null);
