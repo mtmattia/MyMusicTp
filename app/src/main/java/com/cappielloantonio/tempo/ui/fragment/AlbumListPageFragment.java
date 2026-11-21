@@ -1,5 +1,9 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import androidx.core.view.MenuProvider;
+import androidx.lifecycle.Lifecycle;
+import androidx.core.os.BundleCompat;
+import com.cappielloantonio.tempo.subsonic.models.ArtistID3;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
@@ -17,7 +21,6 @@ import android.widget.SearchView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
-import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.util.UnstableApi;
@@ -36,18 +39,12 @@ import com.cappielloantonio.tempo.viewmodel.AlbumListPageViewModel;
 import java.util.List;
 
 @OptIn(markerClass = UnstableApi.class)
-public class AlbumListPageFragment extends Fragment implements ClickCallback {
+public class AlbumListPageFragment extends Fragment implements ClickCallback, MenuProvider {
     private FragmentAlbumListPageBinding bind;
 
     private MainActivity activity;
     private AlbumListPageViewModel albumListPageViewModel;
     private AlbumHorizontalAdapter albumHorizontalAdapter;
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -89,8 +86,8 @@ public class AlbumListPageFragment extends Fragment implements ClickCallback {
         } else if (requireArguments().getString(Constants.ALBUM_DOWNLOADED) != null) {
             albumListPageViewModel.title = Constants.ALBUM_DOWNLOADED;
             bind.pageTitleLabel.setText(R.string.album_list_page_downloaded);
-        } else if (requireArguments().getParcelable(Constants.ARTIST_OBJECT) != null) {
-            albumListPageViewModel.artist = requireArguments().getParcelable(Constants.ARTIST_OBJECT);
+        } else if (BundleCompat.getParcelable(requireArguments(), Constants.ARTIST_OBJECT, ArtistID3.class) != null) {
+            albumListPageViewModel.artist = BundleCompat.getParcelable(requireArguments(), Constants.ARTIST_OBJECT, ArtistID3.class);
             albumListPageViewModel.title = Constants.ALBUM_FROM_ARTIST;
             bind.pageTitleLabel.setText(albumListPageViewModel.artist.getName());
         }
@@ -110,7 +107,7 @@ public class AlbumListPageFragment extends Fragment implements ClickCallback {
         });
 
         bind.appBarLayout.addOnOffsetChangedListener((appBarLayout, verticalOffset) -> {
-            if ((bind.albumInfoSector.getHeight() + verticalOffset) < (2 * ViewCompat.getMinimumHeight(bind.toolbar))) {
+            if ((bind.albumInfoSector.getHeight() + verticalOffset) < (2 * bind.toolbar.getMinimumHeight())) {
                 bind.toolbar.setTitle(R.string.album_list_page_title);
             } else {
                 bind.toolbar.setTitle(R.string.empty_string);
@@ -144,7 +141,13 @@ public class AlbumListPageFragment extends Fragment implements ClickCallback {
     }
 
     @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        requireActivity().addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+    }
+
+    @Override
+    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.toolbar_menu, menu);
 
         MenuItem searchItem = menu.findItem(R.id.action_search);
@@ -166,6 +169,11 @@ public class AlbumListPageFragment extends Fragment implements ClickCallback {
         });
 
         searchView.setPadding(-32, 0, 0, 0);
+    }
+
+    @Override
+    public boolean onMenuItemSelected(@NonNull MenuItem item) {
+        return false;
     }
 
     private void hideKeyboard(View view) {

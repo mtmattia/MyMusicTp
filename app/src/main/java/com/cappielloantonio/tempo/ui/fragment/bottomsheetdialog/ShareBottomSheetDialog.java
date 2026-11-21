@@ -1,5 +1,6 @@
 package com.cappielloantonio.tempo.ui.fragment.bottomsheetdialog;
 
+import androidx.core.os.BundleCompat;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -36,7 +37,7 @@ public class ShareBottomSheetDialog extends BottomSheetDialogFragment implements
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.bottom_sheet_share_dialog, container, false);
 
-        share = this.requireArguments().getParcelable(Constants.SHARE_OBJECT);
+        share = BundleCompat.getParcelable(this.requireArguments(), Constants.SHARE_OBJECT, Share.class);
 
         homeViewModel = new ViewModelProvider(requireActivity()).get(HomeViewModel.class);
         shareBottomSheetViewModel = new ViewModelProvider(requireActivity()).get(ShareBottomSheetViewModel.class);

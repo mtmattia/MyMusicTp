@@ -1,5 +1,10 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import com.cappielloantonio.tempo.subsonic.models.Child;
+import androidx.core.view.MenuProvider;
+import androidx.lifecycle.Lifecycle;
+import androidx.core.os.BundleCompat;
+import com.cappielloantonio.tempo.subsonic.models.AlbumID3;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
@@ -43,7 +48,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @UnstableApi
-public class AlbumPageFragment extends Fragment implements ClickCallback {
+public class AlbumPageFragment extends Fragment implements ClickCallback, MenuProvider {
     private FragmentAlbumPageBinding bind;
     private MainActivity activity;
     private AlbumPageViewModel albumPageViewModel;
@@ -51,14 +56,13 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
     private ListenableFuture<MediaBrowser> mediaBrowserListenableFuture;
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        requireActivity().addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
     }
 
     @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        super.onCreateOptionsMenu(menu, inflater);
+    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.album_page_menu, menu);
     }
 
@@ -101,7 +105,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    public boolean onMenuItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_download_album) {
             albumPageViewModel.getAlbumSongLiveList().observe(getViewLifecycleOwner(), songs -> {
                 DownloadUtil.getDownloadTracker(requireContext()).download(MappingUtil.mapDownloads(songs), songs.stream().map(Download::new).collect(Collectors.toList()));
@@ -113,7 +117,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
     }
 
     private void init() {
-        albumPageViewModel.setAlbum(getViewLifecycleOwner(), requireArguments().getParcelable(Constants.ALBUM_OBJECT));
+        albumPageViewModel.setAlbum(getViewLifecycleOwner(), BundleCompat.getParcelable(requireArguments(), Constants.ALBUM_OBJECT, AlbumID3.class));
     }
 
     private void initAppBar() {
@@ -251,7 +255,7 @@ public class AlbumPageFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onMediaClick(Bundle bundle) {
-        MediaManager.startQueue(mediaBrowserListenableFuture, bundle.getParcelableArrayList(Constants.TRACKS_OBJECT), bundle.getInt(Constants.ITEM_POSITION));
+        MediaManager.startQueue(mediaBrowserListenableFuture, BundleCompat.getParcelableArrayList(bundle, Constants.TRACKS_OBJECT, Child.class), bundle.getInt(Constants.ITEM_POSITION));
         activity.setBottomSheetInPeek(true);
     }
 

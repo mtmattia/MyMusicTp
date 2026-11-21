@@ -3,6 +3,7 @@ package com.cappielloantonio.tempo.ui.fragment;
 import android.content.ComponentName;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -256,7 +257,7 @@ public class PlayerBottomSheetFragment extends Fragment {
     }
 
     private void defineProgressBarHandler(MediaBrowser mediaBrowser) {
-        progressBarHandler = new Handler();
+        progressBarHandler = new Handler(Looper.getMainLooper());
         progressBarRunnable = () -> {
             setProgress(mediaBrowser);
             progressBarHandler.postDelayed(progressBarRunnable, 1000);
@@ -302,7 +303,7 @@ public class PlayerBottomSheetFragment extends Fragment {
                 return true;
             });
 
-            new Handler().postDelayed(() -> {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 if (bind != null)
                     bind.playerHeaderLayout.playerHeaderBookmarkMediaButton.setVisibility(View.GONE);
             }, Preferences.getSyncCountdownTimer() * 1000L);

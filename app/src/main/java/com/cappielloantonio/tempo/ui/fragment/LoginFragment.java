@@ -1,5 +1,8 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import androidx.core.view.MenuProvider;
+import androidx.lifecycle.Lifecycle;
+import androidx.core.os.BundleCompat;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -11,7 +14,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.util.UnstableApi;
@@ -31,7 +33,7 @@ import com.cappielloantonio.tempo.util.Preferences;
 import com.cappielloantonio.tempo.viewmodel.LoginViewModel;
 
 @UnstableApi
-public class LoginFragment extends Fragment implements ClickCallback {
+public class LoginFragment extends Fragment implements ClickCallback, MenuProvider {
     private static final String TAG = "LoginFragment";
 
     private FragmentLoginBinding bind;
@@ -41,14 +43,13 @@ public class LoginFragment extends Fragment implements ClickCallback {
     private ServerAdapter serverAdapter;
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        requireActivity().addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
     }
 
     @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        super.onCreateOptionsMenu(menu, inflater);
+    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.login_page_menu, menu);
     }
 
@@ -77,7 +78,7 @@ public class LoginFragment extends Fragment implements ClickCallback {
         activity.setSupportActionBar(bind.toolbar);
 
         bind.appBarLayout.addOnOffsetChangedListener((appBarLayout, verticalOffset) -> {
-            if ((bind.serverInfoSector.getHeight() + verticalOffset) < (2 * ViewCompat.getMinimumHeight(bind.toolbar))) {
+            if ((bind.serverInfoSector.getHeight() + verticalOffset) < (2 * bind.toolbar.getMinimumHeight())) {
                 bind.toolbar.setTitle(R.string.login_title);
             } else {
                 bind.toolbar.setTitle(R.string.empty_string);
@@ -104,7 +105,7 @@ public class LoginFragment extends Fragment implements ClickCallback {
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    public boolean onMenuItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_add) {
             ServerSignupDialog dialog = new ServerSignupDialog();
             dialog.show(activity.getSupportFragmentManager(), null);
@@ -116,7 +117,7 @@ public class LoginFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onServerClick(Bundle bundle) {
-        Server server = bundle.getParcelable("server_object");
+        Server server = BundleCompat.getParcelable(bundle, "server_object", Server.class);
         saveServerPreference(server.getServerId(), server.getAddress(), server.getLocalAddress(), server.getUsername(), server.getPassword(), server.isLowSecurity());
 
         SystemRepository systemRepository = new SystemRepository();

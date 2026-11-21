@@ -27,6 +27,8 @@ import com.cappielloantonio.tempo.util.ReplayGainUtil
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 @UnstableApi
 class MediaService : MediaLibraryService(), SessionAvailabilityListener {
@@ -35,6 +37,8 @@ class MediaService : MediaLibraryService(), SessionAvailabilityListener {
     private lateinit var castPlayer: CastPlayer
     private lateinit var mediaLibrarySession: MediaLibrarySession
     private lateinit var librarySessionCallback: MediaLibrarySessionCallback
+    private val castExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private var isReleased = false
 
     override fun onCreate() {
         super.onCreate()
@@ -45,10 +49,7 @@ class MediaService : MediaLibraryService(), SessionAvailabilityListener {
         initializeMediaLibrarySession()
         initializePlayerListener()
 
-        setPlayer(
-                null,
-                if (this::castPlayer.isInitialized && castPlayer.isCastSessionAvailable) castPlayer else player
-        )
+        setPlayer(null, player)
     }
 
     override fun onGetSession(controllerInfo: ControllerInfo): MediaLibrarySession {
@@ -89,13 +90,26 @@ class MediaService : MediaLibraryService(), SessionAvailabilityListener {
         ) {
             // CastContext può lanciare eccezioni (es. Play Services in aggiornamento): un crash qui
             // in onCreate fa sparire l'app da Android Auto. Il cast è opzionale, quindi lo saltiamo.
+            // Inizializzazione asincrona (getSharedInstance(Context) è deprecata): non blocca onCreate.
             try {
-                castPlayer = CastPlayer(CastContext.getSharedInstance(this))
-                castPlayer.setSessionAvailabilityListener(this)
-                castPlayer.addListener(layoutListener)
+                CastContext.getSharedInstance(this, castExecutor)
+                        .addOnSuccessListener { castContext -> onCastContextReady(castContext) }
+                        .addOnFailureListener { e -> Log.w("MediaService", "Cast non disponibile", e) }
             } catch (e: Exception) {
                 Log.w("MediaService", "Cast non disponibile", e)
             }
+        }
+    }
+
+    private fun onCastContextReady(castContext: CastContext) {
+        if (isReleased) return
+        try {
+            castPlayer = CastPlayer(castContext)
+            castPlayer.setSessionAvailabilityListener(this)
+            castPlayer.addListener(layoutListener)
+            if (castPlayer.isCastSessionAvailable) onCastSessionAvailable()
+        } catch (e: Exception) {
+            Log.w("MediaService", "Cast non disponibile", e)
         }
     }
 
@@ -217,6 +231,8 @@ class MediaService : MediaLibraryService(), SessionAvailabilityListener {
     }
 
     private fun releasePlayer() {
+        isReleased = true
+        castExecutor.shutdown()
         if (this::castPlayer.isInitialized) castPlayer.setSessionAvailabilityListener(null)
         if (this::castPlayer.isInitialized) castPlayer.release()
         player.release()

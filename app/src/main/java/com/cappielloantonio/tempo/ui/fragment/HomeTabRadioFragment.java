@@ -1,8 +1,11 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import androidx.core.os.BundleCompat;
+import com.cappielloantonio.tempo.subsonic.models.InternetRadioStation;
 import android.content.ComponentName;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -125,7 +128,7 @@ public class HomeTabRadioFragment extends Fragment implements ClickCallback, Rad
 
     @Override
     public void onInternetRadioStationClick(Bundle bundle) {
-        MediaManager.startRadio(mediaBrowserListenableFuture, bundle.getParcelable(Constants.INTERNET_RADIO_STATION_OBJECT));
+        MediaManager.startRadio(mediaBrowserListenableFuture, BundleCompat.getParcelable(bundle, Constants.INTERNET_RADIO_STATION_OBJECT, InternetRadioStation.class));
         activity.setBottomSheetInPeek(true);
     }
 
@@ -143,7 +146,7 @@ public class HomeTabRadioFragment extends Fragment implements ClickCallback, Rad
 
     @Override
     public void onDismiss() {
-        new Handler().postDelayed(() -> {
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
             if (radioViewModel != null)
                 radioViewModel.refreshInternetRadioStations(getViewLifecycleOwner());
         }, 1000);

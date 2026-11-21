@@ -1,5 +1,7 @@
 package com.cappielloantonio.tempo.ui.dialog;
 
+import androidx.core.os.BundleCompat;
+import com.cappielloantonio.tempo.subsonic.models.Child;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.view.View;
@@ -57,7 +59,7 @@ public class PlaylistChooserDialog extends DialogFragment implements ClickCallba
     }
 
     private void setSongInfo() {
-        playlistChooserViewModel.setSongToAdd(requireArguments().getParcelable(Constants.TRACK_OBJECT));
+        playlistChooserViewModel.setSongToAdd(BundleCompat.getParcelable(requireArguments(), Constants.TRACK_OBJECT, Child.class));
     }
 
     private void setButtonAction() {
@@ -97,7 +99,7 @@ public class PlaylistChooserDialog extends DialogFragment implements ClickCallba
 
     @Override
     public void onPlaylistClick(Bundle bundle) {
-        Playlist playlist = bundle.getParcelable(Constants.PLAYLIST_OBJECT);
+        Playlist playlist = BundleCompat.getParcelable(bundle, Constants.PLAYLIST_OBJECT, Playlist.class);
         playlistChooserViewModel.addSongToPlaylist(playlist.getId());
         dismiss();
     }

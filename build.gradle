@@ -5,7 +5,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.8.0'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21'
     }
 }
 
@@ -17,5 +17,12 @@ allprojects {
 }
 
 tasks.register('clean', Delete) {
-    delete rootProject.buildDir
+    delete rootProject.layout.buildDirectory
+}
+
+allprojects {
+    // Mostra i dettagli dei warning di deprecazione Java in build
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs << "-Xlint:deprecation"
+    }
 }

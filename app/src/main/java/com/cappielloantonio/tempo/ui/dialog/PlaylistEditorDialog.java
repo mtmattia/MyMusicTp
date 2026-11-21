@@ -1,5 +1,8 @@
 package com.cappielloantonio.tempo.ui.dialog;
 
+import androidx.core.os.BundleCompat;
+import com.cappielloantonio.tempo.subsonic.models.Playlist;
+import com.cappielloantonio.tempo.subsonic.models.Child;
 import android.app.Dialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -74,12 +77,12 @@ public class PlaylistEditorDialog extends DialogFragment {
     }
 
     private void setParameterInfo() {
-        if (requireArguments().getParcelable(Constants.TRACK_OBJECT) != null) {
-            playlistEditorViewModel.setSongToAdd(requireArguments().getParcelable(Constants.TRACK_OBJECT));
+        if (BundleCompat.getParcelable(requireArguments(), Constants.TRACK_OBJECT, Child.class) != null) {
+            playlistEditorViewModel.setSongToAdd(BundleCompat.getParcelable(requireArguments(), Constants.TRACK_OBJECT, Child.class));
             playlistEditorViewModel.setPlaylistToEdit(null);
-        } else if (requireArguments().getParcelable(Constants.PLAYLIST_OBJECT) != null) {
+        } else if (BundleCompat.getParcelable(requireArguments(), Constants.PLAYLIST_OBJECT, Playlist.class) != null) {
             playlistEditorViewModel.setSongToAdd(null);
-            playlistEditorViewModel.setPlaylistToEdit(requireArguments().getParcelable(Constants.PLAYLIST_OBJECT));
+            playlistEditorViewModel.setPlaylistToEdit(BundleCompat.getParcelable(requireArguments(), Constants.PLAYLIST_OBJECT, Playlist.class));
 
             if (playlistEditorViewModel.getPlaylistToEdit() != null) {
                 bind.playlistNameTextView.setText(playlistEditorViewModel.getPlaylistToEdit().getName());

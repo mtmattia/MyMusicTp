@@ -7,7 +7,7 @@ android {
     buildToolsVersion = '35.0.0'
 
     defaultConfig {
-        minSdkVersion 24
+        minSdk 24
         targetSdk 35
 
         versionCode 26
@@ -58,10 +58,6 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-
     buildFeatures {
         viewBinding true
         buildConfig true
@@ -70,10 +66,17 @@ android {
     namespace 'com.cappielloantonio.tempo'
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
+    }
+}
+
 dependencies {
     implementation files('../libs/lib-decoder-ffmpeg-release.aar')
 
     // AndroidX
+    implementation 'androidx.core:core:1.15.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.2.0'
     implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
     implementation 'androidx.preference:preference-ktx:1.2.1'

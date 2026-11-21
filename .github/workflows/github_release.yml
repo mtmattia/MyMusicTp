@@ -8,17 +8,19 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Setup JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
       - name: Cache Gradle and wrapper
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -52,27 +54,19 @@ jobs:
           BUILD_TOOLS_VERSION: ${{ env.BUILD_TOOL_VERSION }}
 
       - name: Make artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: app-release-signed
           path: ${{steps.sign_apk.outputs.signedReleaseFile}}
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release v${{ github.ref }}
-          body: '> Changelog coming soon'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - name: Rename APK
+        run: cp "${{ steps.sign_apk.outputs.signedReleaseFile }}" app-tempo-release.apk
 
-      - name: Upload APK
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      # actions/create-release e actions/upload-release-asset sono archiviate (deprecate)
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{steps.sign_apk.outputs.signedReleaseFile}}
-          asset_name: app-tempo-release.apk
-          asset_content_type: application/zip
+          tag_name: ${{ github.ref_name }}
+          name: Release v${{ github.ref_name }}
+          body: '> Changelog coming soon'
+          files: app-tempo-release.apk
