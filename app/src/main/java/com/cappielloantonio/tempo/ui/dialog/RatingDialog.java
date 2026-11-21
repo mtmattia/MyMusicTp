@@ -1,5 +1,9 @@
 package com.cappielloantonio.tempo.ui.dialog;
 
+import androidx.core.os.BundleCompat;
+import com.cappielloantonio.tempo.subsonic.models.Child;
+import com.cappielloantonio.tempo.subsonic.models.ArtistID3;
+import com.cappielloantonio.tempo.subsonic.models.AlbumID3;
 import android.app.Dialog;
 import android.os.Bundle;
 
@@ -48,12 +52,12 @@ public class RatingDialog extends DialogFragment {
     }
 
     private void setElementInfo() {
-        if (requireArguments().getParcelable(Constants.TRACK_OBJECT) != null) {
-            ratingViewModel.setSong(requireArguments().getParcelable(Constants.TRACK_OBJECT));
-        } else if (requireArguments().getParcelable(Constants.ALBUM_OBJECT) != null) {
-            ratingViewModel.setAlbum(requireArguments().getParcelable(Constants.ALBUM_OBJECT));
-        } else if (requireArguments().getParcelable(Constants.ARTIST_OBJECT) != null) {
-            ratingViewModel.setArtist(requireArguments().getParcelable(Constants.ARTIST_OBJECT));
+        if (BundleCompat.getParcelable(requireArguments(), Constants.TRACK_OBJECT, Child.class) != null) {
+            ratingViewModel.setSong(BundleCompat.getParcelable(requireArguments(), Constants.TRACK_OBJECT, Child.class));
+        } else if (BundleCompat.getParcelable(requireArguments(), Constants.ALBUM_OBJECT, AlbumID3.class) != null) {
+            ratingViewModel.setAlbum(BundleCompat.getParcelable(requireArguments(), Constants.ALBUM_OBJECT, AlbumID3.class));
+        } else if (BundleCompat.getParcelable(requireArguments(), Constants.ARTIST_OBJECT, ArtistID3.class) != null) {
+            ratingViewModel.setArtist(BundleCompat.getParcelable(requireArguments(), Constants.ARTIST_OBJECT, ArtistID3.class));
         }
     }
 

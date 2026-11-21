@@ -1,5 +1,6 @@
 package com.cappielloantonio.tempo.ui.fragment.bottomsheetdialog;
 
+import androidx.core.os.BundleCompat;
 import android.content.ComponentName;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -38,7 +39,7 @@ public class PodcastEpisodeBottomSheetDialog extends BottomSheetDialogFragment i
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.bottom_sheet_podcast_episode_dialog, container, false);
 
-        podcastEpisode = requireArguments().getParcelable(Constants.PODCAST_OBJECT);
+        podcastEpisode = BundleCompat.getParcelable(requireArguments(), Constants.PODCAST_OBJECT, PodcastEpisode.class);
 
         podcastEpisodeBottomSheetViewModel = new ViewModelProvider(requireActivity()).get(PodcastEpisodeBottomSheetViewModel.class);
         podcastEpisodeBottomSheetViewModel.setPodcastEpisode(podcastEpisode);

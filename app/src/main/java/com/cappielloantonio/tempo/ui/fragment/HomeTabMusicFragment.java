@@ -1,10 +1,13 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import androidx.core.os.BundleCompat;
+import com.cappielloantonio.tempo.subsonic.models.ArtistID3;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,7 +16,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
@@ -97,7 +99,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
 
     private ListenableFuture<MediaBrowser> mediaBrowserListenableFuture;
 
-    private final Handler refreshHandler = new Handler();
+    private final Handler refreshHandler = new Handler(Looper.getMainLooper());
     private boolean hasResumedOnce = false;
     private MediaBrowser connectedMediaBrowser;
     private final Runnable listeningRefresh = () -> {
@@ -820,7 +822,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     }
 
     private void refreshSharesView() {
-        final Handler handler = new Handler();
+        final Handler handler = new Handler(Looper.getMainLooper());
         final Runnable runnable = () -> {
             if (getView() != null && bind != null && Preferences.isSharingEnabled()) {
                 homeViewModel.refreshShares(getViewLifecycleOwner());
@@ -833,7 +835,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
         viewPager.setPageTransformer((page, position) -> {
             float myOffset = position * -(2 * pageOffset + pageMargin);
             if (viewPager.getOrientation() == ViewPager2.ORIENTATION_HORIZONTAL) {
-                if (ViewCompat.getLayoutDirection(viewPager) == ViewCompat.LAYOUT_DIRECTION_RTL) {
+                if (viewPager.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) {
                     page.setTranslationX(-myOffset);
                 } else {
                     page.setTranslationX(myOffset);
@@ -930,7 +932,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     }
 
     private void refreshPlaylistView() {
-        final Handler handler = new Handler();
+        final Handler handler = new Handler(Looper.getMainLooper());
 
         final Runnable runnable = () -> {
             if (getView() != null && bind != null && homeViewModel != null)
@@ -966,11 +968,11 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     @Override
     public void onMediaClick(Bundle bundle) {
         if (bundle.containsKey(Constants.MEDIA_MIX)) {
-            MediaManager.startQueue(mediaBrowserListenableFuture, bundle.getParcelable(Constants.TRACK_OBJECT));
+            MediaManager.startQueue(mediaBrowserListenableFuture, BundleCompat.getParcelable(bundle, Constants.TRACK_OBJECT, Child.class));
             activity.setBottomSheetInPeek(true);
 
             if (mediaBrowserListenableFuture != null) {
-                homeViewModel.getMediaInstantMix(getViewLifecycleOwner(), bundle.getParcelable(Constants.TRACK_OBJECT)).observe(getViewLifecycleOwner(), songs -> {
+                homeViewModel.getMediaInstantMix(getViewLifecycleOwner(), BundleCompat.getParcelable(bundle, Constants.TRACK_OBJECT, Child.class)).observe(getViewLifecycleOwner(), songs -> {
                     MusicUtil.ratingFilter(songs);
 
                     if (songs != null && !songs.isEmpty()) {
@@ -979,11 +981,11 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                 });
             }
         } else if (bundle.containsKey(Constants.MEDIA_CHRONOLOGY)) {
-            List<Child> media = bundle.getParcelableArrayList(Constants.TRACKS_OBJECT);
+            List<Child> media = BundleCompat.getParcelableArrayList(bundle, Constants.TRACKS_OBJECT, Child.class);
             MediaManager.startQueue(mediaBrowserListenableFuture, media, bundle.getInt(Constants.ITEM_POSITION));
             activity.setBottomSheetInPeek(true);
         } else {
-            MediaManager.startQueue(mediaBrowserListenableFuture, bundle.getParcelableArrayList(Constants.TRACKS_OBJECT), bundle.getInt(Constants.ITEM_POSITION));
+            MediaManager.startQueue(mediaBrowserListenableFuture, BundleCompat.getParcelableArrayList(bundle, Constants.TRACKS_OBJECT, Child.class), bundle.getInt(Constants.ITEM_POSITION));
             activity.setBottomSheetInPeek(true);
         }
     }
@@ -1011,7 +1013,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                     .show();
 
             if (mediaBrowserListenableFuture != null) {
-                homeViewModel.getArtistInstantMix(getViewLifecycleOwner(), bundle.getParcelable(Constants.ARTIST_OBJECT)).observe(getViewLifecycleOwner(), songs -> {
+                homeViewModel.getArtistInstantMix(getViewLifecycleOwner(), BundleCompat.getParcelable(bundle, Constants.ARTIST_OBJECT, ArtistID3.class)).observe(getViewLifecycleOwner(), songs -> {
                     MusicUtil.ratingFilter(songs);
 
                     if (!songs.isEmpty()) {
@@ -1022,7 +1024,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
             }
         } else if (bundle.containsKey(Constants.MEDIA_BEST_OF) && bundle.getBoolean(Constants.MEDIA_BEST_OF)) {
             if (mediaBrowserListenableFuture != null) {
-                homeViewModel.getArtistBestOf(getViewLifecycleOwner(), bundle.getParcelable(Constants.ARTIST_OBJECT)).observe(getViewLifecycleOwner(), songs -> {
+                homeViewModel.getArtistBestOf(getViewLifecycleOwner(), BundleCompat.getParcelable(bundle, Constants.ARTIST_OBJECT, ArtistID3.class)).observe(getViewLifecycleOwner(), songs -> {
                     MusicUtil.ratingFilter(songs);
 
                     if (!songs.isEmpty()) {
@@ -1048,7 +1050,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onShareClick(Bundle bundle) {
-        Share share = bundle.getParcelable(Constants.SHARE_OBJECT);
+        Share share = BundleCompat.getParcelable(bundle, Constants.SHARE_OBJECT, Share.class);
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(share.getUrl())).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }

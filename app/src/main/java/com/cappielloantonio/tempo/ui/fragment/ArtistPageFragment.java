@@ -1,5 +1,7 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import com.cappielloantonio.tempo.subsonic.models.Child;
+import androidx.core.os.BundleCompat;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
@@ -95,7 +97,7 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
     }
 
     private void init() {
-        artistPageViewModel.setArtist(requireArguments().getParcelable(Constants.ARTIST_OBJECT));
+        artistPageViewModel.setArtist(BundleCompat.getParcelable(requireArguments(), Constants.ARTIST_OBJECT, ArtistID3.class));
 
         bind.mostStreamedSongTextViewClickable.setOnClickListener(v -> {
             Bundle bundle = new Bundle();
@@ -245,7 +247,7 @@ public class ArtistPageFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onMediaClick(Bundle bundle) {
-        MediaManager.startQueue(mediaBrowserListenableFuture, bundle.getParcelableArrayList(Constants.TRACKS_OBJECT), bundle.getInt(Constants.ITEM_POSITION));
+        MediaManager.startQueue(mediaBrowserListenableFuture, BundleCompat.getParcelableArrayList(bundle, Constants.TRACKS_OBJECT, Child.class), bundle.getInt(Constants.ITEM_POSITION));
         activity.setBottomSheetInPeek(true);
     }
 

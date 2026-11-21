@@ -1,5 +1,6 @@
 package com.cappielloantonio.tempo.ui.fragment.bottomsheetdialog;
 
+import androidx.core.os.BundleCompat;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ComponentName;
@@ -52,7 +53,7 @@ public class SongBottomSheetDialog extends BottomSheetDialogFragment implements 
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.bottom_sheet_song_dialog, container, false);
 
-        song = requireArguments().getParcelable(Constants.TRACK_OBJECT);
+        song = BundleCompat.getParcelable(requireArguments(), Constants.TRACK_OBJECT, Child.class);
 
         homeViewModel = new ViewModelProvider(requireActivity()).get(HomeViewModel.class);
         songBottomSheetViewModel = new ViewModelProvider(requireActivity()).get(SongBottomSheetViewModel.class);

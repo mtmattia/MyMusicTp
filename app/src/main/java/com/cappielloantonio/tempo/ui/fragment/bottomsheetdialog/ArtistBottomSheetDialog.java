@@ -1,5 +1,6 @@
 package com.cappielloantonio.tempo.ui.fragment.bottomsheetdialog;
 
+import androidx.core.os.BundleCompat;
 import android.content.ComponentName;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -43,7 +44,7 @@ public class ArtistBottomSheetDialog extends BottomSheetDialogFragment implement
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.bottom_sheet_artist_dialog, container, false);
 
-        artist = this.requireArguments().getParcelable(Constants.ARTIST_OBJECT);
+        artist = BundleCompat.getParcelable(this.requireArguments(), Constants.ARTIST_OBJECT, ArtistID3.class);
 
         artistBottomSheetViewModel = new ViewModelProvider(requireActivity()).get(ArtistBottomSheetViewModel.class);
         artistBottomSheetViewModel.setArtist(artist);

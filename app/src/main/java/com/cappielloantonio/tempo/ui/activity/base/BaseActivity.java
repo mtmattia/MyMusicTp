@@ -105,6 +105,10 @@ public class BaseActivity extends AppCompatActivity {
         }
     }
 
+    // Window#setStatusBarColor/setNavigationBarColor sono deprecate da API 35 perché il sistema
+    // impone l'edge-to-edge. L'app ne è esclusa (windowOptOutEdgeToEdgeEnforcement in values-v35),
+    // quindi queste chiamate restano efficaci; la vera alternativa è migrare la UI a edge-to-edge.
+    @SuppressWarnings("deprecation")
     private void setNavigationBarColor() {
         getWindow().setNavigationBarColor(SurfaceColors.getColorForElevation(this, 8));
         getWindow().setStatusBarColor(SurfaceColors.getColorForElevation(this, 0));

@@ -1,14 +1,16 @@
 package com.cappielloantonio.tempo.ui.activity;
 
 import android.content.Context;
-import android.content.IntentFilter;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.fragment.app.FragmentManager;
@@ -22,7 +24,6 @@ import androidx.navigation.ui.NavigationUI;
 import com.cappielloantonio.tempo.App;
 import com.cappielloantonio.tempo.BuildConfig;
 import com.cappielloantonio.tempo.R;
-import com.cappielloantonio.tempo.broadcast.receiver.ConnectivityStatusBroadcastReceiver;
 import com.cappielloantonio.tempo.databinding.ActivityMainBinding;
 import com.cappielloantonio.tempo.github.utils.UpdateUtil;
 import com.cappielloantonio.tempo.service.MediaManager;
@@ -32,6 +33,7 @@ import com.cappielloantonio.tempo.ui.dialog.GithubTempoUpdateDialog;
 import com.cappielloantonio.tempo.subsonic.RetrofitClient;
 import com.cappielloantonio.tempo.ui.dialog.ServerUnreachableDialog;
 import com.cappielloantonio.tempo.ui.fragment.PlayerBottomSheetFragment;
+import com.cappielloantonio.tempo.util.ConnectivityStatusMonitor;
 import com.cappielloantonio.tempo.util.Constants;
 import com.cappielloantonio.tempo.util.Preferences;
 import com.cappielloantonio.tempo.viewmodel.MainViewModel;
@@ -56,7 +58,7 @@ public class MainActivity extends BaseActivity {
     public NavController navController;
     private BottomSheetBehavior bottomSheetBehavior;
 
-    ConnectivityStatusBroadcastReceiver connectivityStatusBroadcastReceiver;
+    private ConnectivityStatusMonitor connectivityStatusMonitor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,10 +73,11 @@ public class MainActivity extends BaseActivity {
 
         mainViewModel = new ViewModelProvider(this).get(MainViewModel.class);
 
-        connectivityStatusBroadcastReceiver = new ConnectivityStatusBroadcastReceiver(this);
+        connectivityStatusMonitor = new ConnectivityStatusMonitor(this, this::onConnectivityChanged);
         connectivityStatusReceiverManager(true);
 
         init();
+        getOnBackPressedDispatcher().addCallback(this, backPressedCallback);
         checkConnectionType();
         getOpenSubsonicExtensions();
         checkTempoUpdate();
@@ -99,13 +102,18 @@ public class MainActivity extends BaseActivity {
         bind = null;
     }
 
-    @Override
-    public void onBackPressed() {
-        if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED)
-            collapseBottomSheetDelayed();
-        else
-            super.onBackPressed();
-    }
+    private final OnBackPressedCallback backPressedCallback = new OnBackPressedCallback(true) {
+        @Override
+        public void handleOnBackPressed() {
+            if (bottomSheetBehavior != null && bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+                collapseBottomSheetDelayed();
+            } else {
+                setEnabled(false);
+                getOnBackPressedDispatcher().onBackPressed();
+                setEnabled(true);
+            }
+        }
+    };
 
     public void init() {
         fragmentManager = getSupportFragmentManager();
@@ -146,13 +154,13 @@ public class MainActivity extends BaseActivity {
     }
 
     private void checkBottomSheetAfterStateChanged() {
-        final Handler handler = new Handler();
+        final Handler handler = new Handler(Looper.getMainLooper());
         final Runnable runnable = () -> setBottomSheetInPeek(mainViewModel.isQueueLoaded());
         handler.postDelayed(runnable, 100);
     }
 
     public void collapseBottomSheetDelayed() {
-        final Handler handler = new Handler();
+        final Handler handler = new Handler(Looper.getMainLooper());
         final Runnable runnable = () -> bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
         handler.postDelayed(runnable, 100);
     }
@@ -334,10 +342,9 @@ public class MainActivity extends BaseActivity {
     // CONNECTION
     private void connectivityStatusReceiverManager(boolean isActive) {
         if (isActive) {
-            IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-            registerReceiver(connectivityStatusBroadcastReceiver, filter);
+            connectivityStatusMonitor.register();
         } else {
-            unregisterReceiver(connectivityStatusBroadcastReceiver);
+            connectivityStatusMonitor.unregister();
         }
     }
 
@@ -428,9 +435,10 @@ public class MainActivity extends BaseActivity {
     private void checkConnectionType() {
         if (Preferences.isWifiOnly()) {
             ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+            Network network = connectivityManager.getActiveNetwork();
+            NetworkCapabilities capabilities = network != null ? connectivityManager.getNetworkCapabilities(network) : null;
 
-            if (networkInfo != null && networkInfo.getType() != ConnectivityManager.TYPE_WIFI) {
+            if (capabilities != null && !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                 ConnectionAlertDialog dialog = new ConnectionAlertDialog();
                 dialog.show(getSupportFragmentManager(), null);
             }

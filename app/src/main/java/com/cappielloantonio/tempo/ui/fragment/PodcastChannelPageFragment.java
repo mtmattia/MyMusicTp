@@ -1,5 +1,7 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import androidx.core.os.BundleCompat;
+import com.cappielloantonio.tempo.subsonic.models.PodcastChannel;
 import android.content.ComponentName;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -79,7 +81,7 @@ public class PodcastChannelPageFragment extends Fragment implements ClickCallbac
     }
 
     private void init() {
-        podcastChannelPageViewModel.setPodcastChannel(requireArguments().getParcelable(Constants.PODCAST_CHANNEL_OBJECT));
+        podcastChannelPageViewModel.setPodcastChannel(BundleCompat.getParcelable(requireArguments(), Constants.PODCAST_CHANNEL_OBJECT, PodcastChannel.class));
     }
 
     private void initAppBar() {
@@ -162,7 +164,7 @@ public class PodcastChannelPageFragment extends Fragment implements ClickCallbac
 
     @Override
     public void onPodcastEpisodeClick(Bundle bundle) {
-        MediaManager.startPodcast(mediaBrowserListenableFuture, bundle.getParcelable(Constants.PODCAST_OBJECT));
+        MediaManager.startPodcast(mediaBrowserListenableFuture, BundleCompat.getParcelable(bundle, Constants.PODCAST_OBJECT, PodcastEpisode.class));
         activity.setBottomSheetInPeek(true);
     }
 
@@ -173,7 +175,7 @@ public class PodcastChannelPageFragment extends Fragment implements ClickCallbac
 
     @Override
     public void onPodcastEpisodeAltClick(Bundle bundle) {
-        PodcastEpisode episode = bundle.getParcelable(Constants.PODCAST_OBJECT);
+        PodcastEpisode episode = BundleCompat.getParcelable(bundle, Constants.PODCAST_OBJECT, PodcastEpisode.class);
         podcastChannelPageViewModel.requestPodcastEpisodeDownload(episode);
 
         Snackbar.make(requireView(), R.string.podcast_episode_download_request_snackbar, Snackbar.LENGTH_SHORT)

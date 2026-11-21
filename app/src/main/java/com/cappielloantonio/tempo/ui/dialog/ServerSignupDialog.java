@@ -1,5 +1,6 @@
 package com.cappielloantonio.tempo.ui.dialog;
 
+import androidx.core.os.BundleCompat;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -65,7 +66,7 @@ public class ServerSignupDialog extends DialogFragment {
 
     private void setServerInfo() {
         if (getArguments() != null) {
-            loginViewModel.setServerToEdit(requireArguments().getParcelable("server_object"));
+            loginViewModel.setServerToEdit(BundleCompat.getParcelable(requireArguments(), "server_object", Server.class));
 
             if (loginViewModel.getServerToEdit() != null) {
                 bind.serverNameTextView.setText(loginViewModel.getServerToEdit().getServerName());

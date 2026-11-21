@@ -1,5 +1,6 @@
 package com.cappielloantonio.tempo.ui.fragment.bottomsheetdialog;
 
+import androidx.core.os.BundleCompat;
 import android.content.ComponentName;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -46,7 +47,7 @@ public class DownloadedBottomSheetDialog extends BottomSheetDialogFragment imple
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.bottom_sheet_downloaded_dialog, container, false);
 
-        songs = this.requireArguments().getParcelableArrayList(Constants.DOWNLOAD_GROUP);
+        songs = BundleCompat.getParcelableArrayList(this.requireArguments(), Constants.DOWNLOAD_GROUP, Child.class);
         groupTitle = this.requireArguments().getString(Constants.DOWNLOAD_GROUP_TITLE);
         groupSubtitle = this.requireArguments().getString(Constants.DOWNLOAD_GROUP_SUBTITLE);
 

@@ -1,12 +1,12 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import androidx.core.os.BundleCompat;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
-import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.util.UnstableApi;
@@ -55,7 +55,7 @@ public class IndexFragment extends Fragment implements ClickCallback {
     }
 
     private void init() {
-        MusicFolder musicFolder = getArguments().getParcelable(Constants.MUSIC_FOLDER_OBJECT);
+        MusicFolder musicFolder = BundleCompat.getParcelable(getArguments(), Constants.MUSIC_FOLDER_OBJECT, MusicFolder.class);
 
         if (musicFolder != null) {
             indexViewModel.setMusicFolder(musicFolder);
@@ -76,7 +76,7 @@ public class IndexFragment extends Fragment implements ClickCallback {
 
         if (bind != null)
             bind.appBarLayout.addOnOffsetChangedListener((appBarLayout, verticalOffset) -> {
-                if ((bind.indexInfoSector.getHeight() + verticalOffset) < (2 * ViewCompat.getMinimumHeight(bind.toolbar))) {
+                if ((bind.indexInfoSector.getHeight() + verticalOffset) < (2 * bind.toolbar.getMinimumHeight())) {
                     bind.toolbar.setTitle(indexViewModel.getMusicFolderName());
                 } else {
                     bind.toolbar.setTitle(R.string.empty_string);
@@ -85,7 +85,7 @@ public class IndexFragment extends Fragment implements ClickCallback {
     }
 
     private void initDirectoryListView() {
-        MusicFolder musicFolder = getArguments().getParcelable(Constants.MUSIC_FOLDER_OBJECT);
+        MusicFolder musicFolder = BundleCompat.getParcelable(getArguments(), Constants.MUSIC_FOLDER_OBJECT, MusicFolder.class);
 
         bind.indexRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         bind.indexRecyclerView.setHasFixedSize(true);

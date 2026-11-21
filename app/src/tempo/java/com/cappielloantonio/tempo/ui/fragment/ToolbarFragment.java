@@ -1,6 +1,10 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import androidx.core.view.MenuProvider;
+import androidx.lifecycle.Lifecycle;
+import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -10,6 +14,7 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.media3.common.util.UnstableApi;
 
@@ -17,9 +22,10 @@ import com.cappielloantonio.tempo.R;
 import com.cappielloantonio.tempo.databinding.FragmentToolbarBinding;
 import com.cappielloantonio.tempo.ui.activity.MainActivity;
 import com.google.android.gms.cast.framework.CastButtonFactory;
+import com.google.android.gms.cast.framework.CastContext;
 
 @UnstableApi
-public class ToolbarFragment extends Fragment {
+public class ToolbarFragment extends Fragment implements MenuProvider {
     private static final String TAG = "ToolbarFragment";
 
     private FragmentToolbarBinding bind;
@@ -30,16 +36,24 @@ public class ToolbarFragment extends Fragment {
     }
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        requireActivity().addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
     }
 
     @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        super.onCreateOptionsMenu(menu, inflater);
+    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.main_page_menu, menu);
-        CastButtonFactory.setUpMediaRouteButton(requireContext(), menu, R.id.media_route_menu_item);
+        // CastContext ora si inizializza in modo asincrono: colleghiamo il pulsante quando è pronto.
+        Context context = requireContext();
+        try {
+            CastContext.getSharedInstance(context, ContextCompat.getMainExecutor(context))
+                    .addOnSuccessListener(castContext -> {
+                        if (isAdded()) CastButtonFactory.setUpMediaRouteButton(context, menu, R.id.media_route_menu_item);
+                    });
+        } catch (Exception e) {
+            Log.w(TAG, "Cast non disponibile", e);
+        }
     }
 
     @Override
@@ -53,7 +67,7 @@ public class ToolbarFragment extends Fragment {
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    public boolean onMenuItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_search) {
             activity.navController.navigate(R.id.searchFragment);
             return true;
