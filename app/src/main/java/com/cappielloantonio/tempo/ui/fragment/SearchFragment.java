@@ -1,5 +1,7 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import androidx.core.os.BundleCompat;
+import com.cappielloantonio.tempo.subsonic.models.Child;
 import android.content.ComponentName;
 import android.os.Bundle;
 import android.text.Editable;
@@ -259,7 +261,7 @@ public class SearchFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onMediaClick(Bundle bundle) {
-        MediaManager.startQueue(mediaBrowserListenableFuture, bundle.getParcelableArrayList(Constants.TRACKS_OBJECT), bundle.getInt(Constants.ITEM_POSITION));
+        MediaManager.startQueue(mediaBrowserListenableFuture, BundleCompat.getParcelableArrayList(bundle, Constants.TRACKS_OBJECT, Child.class), bundle.getInt(Constants.ITEM_POSITION));
         activity.setBottomSheetInPeek(true);
     }
 

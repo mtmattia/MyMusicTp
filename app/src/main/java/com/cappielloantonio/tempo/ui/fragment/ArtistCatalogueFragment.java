@@ -1,5 +1,7 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import androidx.core.view.MenuProvider;
+import androidx.lifecycle.Lifecycle;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
@@ -16,7 +18,6 @@ import android.widget.SearchView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.util.UnstableApi;
@@ -34,7 +35,7 @@ import com.cappielloantonio.tempo.util.Constants;
 import com.cappielloantonio.tempo.viewmodel.ArtistCatalogueViewModel;
 
 @UnstableApi
-public class ArtistCatalogueFragment extends Fragment implements ClickCallback {
+public class ArtistCatalogueFragment extends Fragment implements ClickCallback, MenuProvider {
     private static final String TAG = "ArtistCatalogueFragment";
 
     private FragmentArtistCatalogueBinding bind;
@@ -46,7 +47,6 @@ public class ArtistCatalogueFragment extends Fragment implements ClickCallback {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
 
         initData();
     }
@@ -90,7 +90,7 @@ public class ArtistCatalogueFragment extends Fragment implements ClickCallback {
 
 
         bind.appBarLayout.addOnOffsetChangedListener((appBarLayout, verticalOffset) -> {
-            if ((bind.artistInfoSector.getHeight() + verticalOffset) < (2 * ViewCompat.getMinimumHeight(bind.toolbar))) {
+            if ((bind.artistInfoSector.getHeight() + verticalOffset) < (2 * bind.toolbar.getMinimumHeight())) {
                 bind.toolbar.setTitle(R.string.artist_catalogue_title);
             } else {
                 bind.toolbar.setTitle(R.string.empty_string);
@@ -118,7 +118,13 @@ public class ArtistCatalogueFragment extends Fragment implements ClickCallback {
     }
 
     @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        requireActivity().addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+    }
+
+    @Override
+    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.toolbar_menu, menu);
 
         MenuItem searchItem = menu.findItem(R.id.action_search);
@@ -140,6 +146,11 @@ public class ArtistCatalogueFragment extends Fragment implements ClickCallback {
         });
 
         searchView.setPadding(-32, 0, 0, 0);
+    }
+
+    @Override
+    public boolean onMenuItemSelected(@NonNull MenuItem item) {
+        return false;
     }
 
     private void hideKeyboard(View view) {

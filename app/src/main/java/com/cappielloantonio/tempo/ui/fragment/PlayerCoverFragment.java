@@ -3,6 +3,7 @@ package com.cappielloantonio.tempo.ui.fragment;
 import android.content.ComponentName;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.transition.Fade;
 import android.transition.Transition;
 import android.transition.TransitionManager;
@@ -40,7 +41,7 @@ public class PlayerCoverFragment extends Fragment {
     private InnerFragmentPlayerCoverBinding bind;
     private ListenableFuture<MediaBrowser> mediaBrowserListenableFuture;
 
-    private final Handler handler = new Handler();
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {

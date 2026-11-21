@@ -1,5 +1,6 @@
 package com.cappielloantonio.tempo.ui.dialog;
 
+import androidx.core.os.BundleCompat;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -75,8 +76,8 @@ public class RadioEditorDialog extends DialogFragment {
     }
 
     private void setParameterInfo() {
-        if (getArguments() != null && getArguments().getParcelable(Constants.INTERNET_RADIO_STATION_OBJECT) != null) {
-            InternetRadioStation toEdit = requireArguments().getParcelable(Constants.INTERNET_RADIO_STATION_OBJECT);
+        if (getArguments() != null && BundleCompat.getParcelable(getArguments(), Constants.INTERNET_RADIO_STATION_OBJECT, InternetRadioStation.class) != null) {
+            InternetRadioStation toEdit = BundleCompat.getParcelable(requireArguments(), Constants.INTERNET_RADIO_STATION_OBJECT, InternetRadioStation.class);
 
             radioEditorViewModel.setRadioToEdit(toEdit);
 

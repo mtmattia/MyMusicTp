@@ -1,5 +1,11 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import androidx.core.view.MenuProvider;
+import androidx.lifecycle.Lifecycle;
+import androidx.core.os.BundleCompat;
+import com.cappielloantonio.tempo.subsonic.models.Genre;
+import com.cappielloantonio.tempo.subsonic.models.ArtistID3;
+import com.cappielloantonio.tempo.subsonic.models.AlbumID3;
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
@@ -17,7 +23,6 @@ import android.widget.SearchView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.util.UnstableApi;
@@ -43,7 +48,7 @@ import java.util.Collections;
 import java.util.List;
 
 @UnstableApi
-public class SongListPageFragment extends Fragment implements ClickCallback {
+public class SongListPageFragment extends Fragment implements ClickCallback, MenuProvider {
     private static final String TAG = "SongListPageFragment";
 
     private FragmentSongListPageBinding bind;
@@ -55,12 +60,6 @@ public class SongListPageFragment extends Fragment implements ClickCallback {
     private ListenableFuture<MediaBrowser> mediaBrowserListenableFuture;
 
     private boolean isLoading = true;
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -111,12 +110,12 @@ public class SongListPageFragment extends Fragment implements ClickCallback {
             bind.pageTitleLabel.setText(R.string.song_list_page_recently_added);
         } else if (requireArguments().getString(Constants.MEDIA_BY_GENRE) != null) {
             songListPageViewModel.title = Constants.MEDIA_BY_GENRE;
-            songListPageViewModel.genre = requireArguments().getParcelable(Constants.GENRE_OBJECT);
+            songListPageViewModel.genre = BundleCompat.getParcelable(requireArguments(), Constants.GENRE_OBJECT, Genre.class);
             songListPageViewModel.toolbarTitle = songListPageViewModel.genre.getGenre();
             bind.pageTitleLabel.setText(songListPageViewModel.genre.getGenre());
         } else if (requireArguments().getString(Constants.MEDIA_BY_ARTIST) != null) {
             songListPageViewModel.title = Constants.MEDIA_BY_ARTIST;
-            songListPageViewModel.artist = requireArguments().getParcelable(Constants.ARTIST_OBJECT);
+            songListPageViewModel.artist = BundleCompat.getParcelable(requireArguments(), Constants.ARTIST_OBJECT, ArtistID3.class);
             songListPageViewModel.toolbarTitle = getString(R.string.song_list_page_top, songListPageViewModel.artist.getName());
             bind.pageTitleLabel.setText(getString(R.string.song_list_page_top, songListPageViewModel.artist.getName()));
         } else if (requireArguments().getString(Constants.MEDIA_BY_GENRES) != null) {
@@ -138,8 +137,8 @@ public class SongListPageFragment extends Fragment implements ClickCallback {
             songListPageViewModel.title = Constants.MEDIA_DOWNLOADED;
             songListPageViewModel.toolbarTitle = getString(R.string.song_list_page_downloaded);
             bind.pageTitleLabel.setText(getString(R.string.song_list_page_downloaded));
-        } else if (requireArguments().getParcelable(Constants.ALBUM_OBJECT) != null) {
-            songListPageViewModel.album = requireArguments().getParcelable(Constants.ALBUM_OBJECT);
+        } else if (BundleCompat.getParcelable(requireArguments(), Constants.ALBUM_OBJECT, AlbumID3.class) != null) {
+            songListPageViewModel.album = BundleCompat.getParcelable(requireArguments(), Constants.ALBUM_OBJECT, AlbumID3.class);
             songListPageViewModel.title = Constants.MEDIA_FROM_ALBUM;
             songListPageViewModel.toolbarTitle = songListPageViewModel.album.getName();
             bind.pageTitleLabel.setText(songListPageViewModel.album.getName());
@@ -162,7 +161,7 @@ public class SongListPageFragment extends Fragment implements ClickCallback {
 
         if (bind != null)
             bind.appBarLayout.addOnOffsetChangedListener((appBarLayout, verticalOffset) -> {
-                if ((bind.albumInfoSector.getHeight() + verticalOffset) < (2 * ViewCompat.getMinimumHeight(bind.toolbar))) {
+                if ((bind.albumInfoSector.getHeight() + verticalOffset) < (2 * bind.toolbar.getMinimumHeight())) {
                     bind.toolbar.setTitle(songListPageViewModel.toolbarTitle);
                 } else {
                     bind.toolbar.setTitle(R.string.empty_string);
@@ -219,7 +218,13 @@ public class SongListPageFragment extends Fragment implements ClickCallback {
     }
 
     @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        requireActivity().addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+    }
+
+    @Override
+    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.toolbar_menu, menu);
 
         MenuItem searchItem = menu.findItem(R.id.action_search);
@@ -241,6 +246,11 @@ public class SongListPageFragment extends Fragment implements ClickCallback {
         });
 
         searchView.setPadding(-32, 0, 0, 0);
+    }
+
+    @Override
+    public boolean onMenuItemSelected(@NonNull MenuItem item) {
+        return false;
     }
 
     private void hideKeyboard(View view) {
@@ -317,7 +327,7 @@ public class SongListPageFragment extends Fragment implements ClickCallback {
     @Override
     public void onMediaClick(Bundle bundle) {
         hideKeyboard(requireView());
-        MediaManager.startQueue(mediaBrowserListenableFuture, bundle.getParcelableArrayList(Constants.TRACKS_OBJECT), bundle.getInt(Constants.ITEM_POSITION));
+        MediaManager.startQueue(mediaBrowserListenableFuture, BundleCompat.getParcelableArrayList(bundle, Constants.TRACKS_OBJECT, Child.class), bundle.getInt(Constants.ITEM_POSITION));
         activity.setBottomSheetInPeek(true);
     }
 

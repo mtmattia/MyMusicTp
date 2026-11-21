@@ -1,5 +1,10 @@
 package com.cappielloantonio.tempo.ui.fragment;
 
+import com.cappielloantonio.tempo.subsonic.models.Child;
+import androidx.core.view.MenuProvider;
+import androidx.lifecycle.Lifecycle;
+import androidx.core.os.BundleCompat;
+import com.cappielloantonio.tempo.subsonic.models.Playlist;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.Bundle;
@@ -45,7 +50,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @UnstableApi
-public class PlaylistPageFragment extends Fragment implements ClickCallback {
+public class PlaylistPageFragment extends Fragment implements ClickCallback, MenuProvider {
     private FragmentPlaylistPageBinding bind;
     private MainActivity activity;
     private PlaylistPageViewModel playlistPageViewModel;
@@ -55,13 +60,13 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
     private ListenableFuture<MediaBrowser> mediaBrowserListenableFuture;
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        requireActivity().addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
     }
 
     @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.playlist_page_menu, menu);
 
         MenuItem searchItem = menu.findItem(R.id.action_search);
@@ -124,7 +129,7 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    public boolean onMenuItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_download_playlist) {
             playlistPageViewModel.getPlaylistSongLiveList().observe(getViewLifecycleOwner(), songs -> {
                 if (isVisible() && getActivity() != null) {
@@ -152,7 +157,7 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
     }
 
     private void init() {
-        playlistPageViewModel.setPlaylist(requireArguments().getParcelable(Constants.PLAYLIST_OBJECT));
+        playlistPageViewModel.setPlaylist(BundleCompat.getParcelable(requireArguments(), Constants.PLAYLIST_OBJECT, Playlist.class));
     }
 
     private void initMenuOption(Menu menu) {
@@ -262,7 +267,7 @@ public class PlaylistPageFragment extends Fragment implements ClickCallback {
 
     @Override
     public void onMediaClick(Bundle bundle) {
-        MediaManager.startQueue(mediaBrowserListenableFuture, bundle.getParcelableArrayList(Constants.TRACKS_OBJECT), bundle.getInt(Constants.ITEM_POSITION));
+        MediaManager.startQueue(mediaBrowserListenableFuture, BundleCompat.getParcelableArrayList(bundle, Constants.TRACKS_OBJECT, Child.class), bundle.getInt(Constants.ITEM_POSITION));
         activity.setBottomSheetInPeek(true);
     }
 
