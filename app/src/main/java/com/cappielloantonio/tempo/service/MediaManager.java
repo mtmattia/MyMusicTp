@@ -21,9 +21,11 @@ import com.cappielloantonio.tempo.subsonic.models.InternetRadioStation;
 import com.cappielloantonio.tempo.subsonic.models.PodcastEpisode;
 import com.cappielloantonio.tempo.util.MappingUtil;
 import com.cappielloantonio.tempo.util.Preferences;
+import com.cappielloantonio.tempo.util.SmartMix;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -293,7 +295,10 @@ public class MediaManager {
     }
 
     public static void setLastPlayedTimestamp(MediaItem mediaItem) {
-        if (mediaItem != null) getQueueRepository().setLastPlayedTimestamp(mediaItem.mediaId);
+        if (mediaItem != null) {
+            getQueueRepository().setLastPlayedTimestamp(mediaItem.mediaId);
+            SmartMix.markPlayed(mediaItem.mediaId);
+        }
     }
 
     public static void setPlayingPausedTimestamp(MediaItem mediaItem, long ms) {
@@ -312,20 +317,14 @@ public class MediaManager {
         if (mediaItem != null && Preferences.isContinuousPlayEnabled() && Preferences.isInstantMixUsable()) {
             Preferences.setLastInstantMix();
 
-            LiveData<List<Child>> instantMix = getSongRepository().getInstantMix(mediaItem.mediaId, 10);
-            instantMix.observeForever(new Observer<List<Child>>() {
-                @Override
-                public void onChanged(List<Child> media) {
-                    if (media != null) {
-                        ListenableFuture<MediaBrowser> mediaBrowserListenableFuture = new MediaBrowser.Builder(
-                                App.getContext(),
-                                new SessionToken(App.getContext(), new ComponentName(App.getContext(), MediaService.class))
-                        ).buildAsync();
+            SmartMix.fromMediaItem(mediaItem, 10, Collections.emptyList(), media -> {
+                if (media != null && !media.isEmpty()) {
+                    ListenableFuture<MediaBrowser> mediaBrowserListenableFuture = new MediaBrowser.Builder(
+                            App.getContext(),
+                            new SessionToken(App.getContext(), new ComponentName(App.getContext(), MediaService.class))
+                    ).buildAsync();
 
-                        enqueue(mediaBrowserListenableFuture, media, true);
-                    }
-
-                    instantMix.removeObserver(this);
+                    enqueue(mediaBrowserListenableFuture, media, true);
                 }
             });
         }
