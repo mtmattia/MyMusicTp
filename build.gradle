@@ -19,3 +19,9 @@ allprojects {
 tasks.register('clean', Delete) {
     delete rootProject.buildDir
 }
+// DIAG
+allprojects {
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs << "-Xlint:deprecation" << "-Xlint:unchecked" << "-Xmaxwarns" << "2000"
+    }
+}
