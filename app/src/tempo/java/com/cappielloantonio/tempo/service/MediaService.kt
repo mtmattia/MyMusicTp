@@ -4,6 +4,7 @@ import android.app.PendingIntent.FLAG_IMMUTABLE
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.app.TaskStackBuilder
 import android.content.Intent
+import android.util.Log
 import androidx.media3.cast.CastPlayer
 import androidx.media3.cast.SessionAvailabilityListener
 import androidx.media3.common.AudioAttributes
@@ -33,6 +34,7 @@ class MediaService : MediaLibraryService(), SessionAvailabilityListener {
     private lateinit var player: ExoPlayer
     private lateinit var castPlayer: CastPlayer
     private lateinit var mediaLibrarySession: MediaLibrarySession
+    private lateinit var librarySessionCallback: MediaLibrarySessionCallback
 
     override fun onCreate() {
         super.onCreate()
@@ -85,8 +87,15 @@ class MediaService : MediaLibraryService(), SessionAvailabilityListener {
         if (GoogleApiAvailability.getInstance()
                         .isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS
         ) {
-            castPlayer = CastPlayer(CastContext.getSharedInstance(this))
-            castPlayer.setSessionAvailabilityListener(this)
+            // CastContext può lanciare eccezioni (es. Play Services in aggiornamento): un crash qui
+            // in onCreate fa sparire l'app da Android Auto. Il cast è opzionale, quindi lo saltiamo.
+            try {
+                castPlayer = CastPlayer(CastContext.getSharedInstance(this))
+                castPlayer.setSessionAvailabilityListener(this)
+                castPlayer.addListener(layoutListener)
+            } catch (e: Exception) {
+                Log.w("MediaService", "Cast non disponibile", e)
+            }
         }
     }
 
@@ -104,10 +113,23 @@ class MediaService : MediaLibraryService(), SessionAvailabilityListener {
     }
 
     private fun createLibrarySessionCallback(): MediaLibrarySession.Callback {
-        return MediaLibrarySessionCallback(this, automotiveRepository)
+        librarySessionCallback = MediaLibrarySessionCallback(this, automotiveRepository)
+        return librarySessionCallback
+    }
+
+    // Tiene sincronizzati i pulsanti shuffle/repeat in auto anche quando cambiano dal telefono
+    private val layoutListener = object : Player.Listener {
+        override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+            if (this@MediaService::mediaLibrarySession.isInitialized) librarySessionCallback.updateCustomLayout(mediaLibrarySession)
+        }
+
+        override fun onRepeatModeChanged(repeatMode: Int) {
+            if (this@MediaService::mediaLibrarySession.isInitialized) librarySessionCallback.updateCustomLayout(mediaLibrarySession)
+        }
     }
 
     private fun initializePlayerListener() {
+        player.addListener(layoutListener)
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 if (mediaItem == null) return

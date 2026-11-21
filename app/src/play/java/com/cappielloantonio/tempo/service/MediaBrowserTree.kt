@@ -474,9 +474,12 @@ object MediaBrowserTree {
                 val sessionMediaItem = automotiveRepository.getSessionMediaItem(it.mediaId)
 
                 if (sessionMediaItem != null) {
-                    var toAdd = automotiveRepository.getMetadatas(sessionMediaItem.timestamp!!)
+                    val timestamp = sessionMediaItem.timestamp ?: return@forEach
+                    var toAdd = automotiveRepository.getMetadatas(timestamp)
                     val index = toAdd.indexOfFirst { mediaItem -> mediaItem.mediaId == it.mediaId }
 
+                    // index == -1 causava IndexOutOfBounds e crash del servizio (app sparisce da Android Auto)
+                    if (index < 0) return@forEach
                     toAdd = toAdd.subList(index, toAdd.size)
 
                     updatedMediaItems.addAll(toAdd)
