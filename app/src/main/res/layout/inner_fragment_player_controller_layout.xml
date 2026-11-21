@@ -131,6 +131,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/exo_progress" />
 
+    <!-- Audio waves behind the seek bar: swell at the playback point, height follows the music -->
+    <com.cappielloantonio.tempo.ui.view.AudioWaveView
+        android:id="@+id/player_audio_wave_view"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:importantForAccessibility="no"
+        app:layout_constraintBottom_toBottomOf="@id/exo_progress"
+        app:layout_constraintEnd_toEndOf="@id/exo_progress"
+        app:layout_constraintStart_toStartOf="@id/exo_progress"
+        app:layout_constraintTop_toTopOf="@id/exo_progress" />
+
     <androidx.media3.ui.DefaultTimeBar
         android:id="@id/exo_progress"
         android:layout_width="0dp"

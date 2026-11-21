@@ -24,6 +24,8 @@ import androidx.media3.session.SessionToken;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.cappielloantonio.tempo.ui.view.AudioWaveView;
+import com.cappielloantonio.tempo.util.CoverPaletteUtil;
 import com.cappielloantonio.tempo.R;
 import com.cappielloantonio.tempo.databinding.InnerFragmentPlayerControllerBinding;
 import com.cappielloantonio.tempo.service.MediaService;
@@ -58,6 +60,7 @@ public class PlayerControllerFragment extends Fragment {
     private ConstraintLayout playerQuickActionView;
     private ImageButton playerOpenQueueButton;
     private ImageButton playerTrackInfo;
+    private AudioWaveView playerAudioWaveView;
 
     private MainActivity activity;
     private PlayerBottomSheetViewModel playerBottomSheetViewModel;
@@ -91,6 +94,7 @@ public class PlayerControllerFragment extends Fragment {
 
     @Override
     public void onStop() {
+        if (playerAudioWaveView != null) playerAudioWaveView.setPlayer(null);
         releaseBrowser();
         super.onStop();
     }
@@ -113,6 +117,7 @@ public class PlayerControllerFragment extends Fragment {
         playerQuickActionView = bind.getRoot().findViewById(R.id.player_quick_action_view);
         playerOpenQueueButton = bind.getRoot().findViewById(R.id.player_open_queue_button);
         playerTrackInfo = bind.getRoot().findViewById(R.id.player_info_track);
+        playerAudioWaveView = bind.getRoot().findViewById(R.id.player_audio_wave_view);
     }
 
     private void initQuickActionView() {
@@ -140,6 +145,7 @@ public class PlayerControllerFragment extends Fragment {
                 MediaBrowser mediaBrowser = mediaBrowserListenableFuture.get();
 
                 bind.nowPlayingMediaControllerView.setPlayer(mediaBrowser);
+                if (playerAudioWaveView != null) playerAudioWaveView.setPlayer(mediaBrowser);
 
                 setMediaControllerListener(mediaBrowser);
             } catch (Exception e) {
@@ -164,6 +170,13 @@ public class PlayerControllerFragment extends Fragment {
     }
 
     private void setMetadata(MediaMetadata mediaMetadata) {
+        if (playerAudioWaveView != null && isAdded()) {
+            String coverArtId = mediaMetadata.extras != null ? mediaMetadata.extras.getString("coverArtId") : null;
+            CoverPaletteUtil.extractAccent(this, coverArtId, color -> {
+                if (playerAudioWaveView != null) playerAudioWaveView.setTint(color);
+            });
+        }
+
         playerMediaTitleLabel.setText(String.valueOf(mediaMetadata.title));
         playerArtistNameLabel.setText(String.valueOf(mediaMetadata.artist));
 

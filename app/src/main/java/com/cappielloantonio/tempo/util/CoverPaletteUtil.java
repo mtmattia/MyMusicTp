@@ -4,6 +4,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.view.View;
@@ -57,6 +58,48 @@ public final class CoverPaletteUtil {
                     @Override
                     public void onLoadFailed(@Nullable Drawable errorDrawable) {
                         animateTo(target, solidTarget, surface, surface);
+                    }
+
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {
+                    }
+                });
+    }
+
+    public interface AccentCallback {
+        void onAccent(@ColorInt int color);
+    }
+
+    /** Vivid accent from the cover (for waves and highlights), or the theme primary as fallback. */
+    public static void extractAccent(@NonNull Fragment fragment, @Nullable String coverArtId, @NonNull AccentCallback callback) {
+        Context context = fragment.requireContext();
+        int fallback = MaterialColors.getColor(context, com.google.android.material.R.attr.colorPrimary, Color.WHITE);
+
+        if (coverArtId == null || Preferences.isDataSavingMode()) {
+            callback.onAccent(fallback);
+            return;
+        }
+
+        Glide.with(fragment)
+                .asBitmap()
+                .load(CustomGlideRequest.createUrl(coverArtId, 128))
+                .override(96, 96)
+                .into(new CustomTarget<Bitmap>() {
+                    @Override
+                    public void onResourceReady(@NonNull Bitmap bitmap, @Nullable Transition<? super Bitmap> transition) {
+                        Palette.from(bitmap).maximumColorCount(16).generate(palette -> {
+                            if (!fragment.isAdded() || palette == null) return;
+                            boolean dark = (context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+                            Palette.Swatch swatch = dark
+                                    ? firstNonNull(palette.getLightVibrantSwatch(), palette.getVibrantSwatch(), palette.getLightMutedSwatch(), palette.getDominantSwatch())
+                                    : firstNonNull(palette.getDarkVibrantSwatch(), palette.getVibrantSwatch(), palette.getDarkMutedSwatch(), palette.getDominantSwatch());
+                            callback.onAccent(swatch != null ? swatch.getRgb() : fallback);
+                        });
+                    }
+
+                    @Override
+                    public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                        callback.onAccent(fallback);
                     }
 
                     @Override

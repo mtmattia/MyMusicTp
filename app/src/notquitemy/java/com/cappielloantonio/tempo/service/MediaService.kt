@@ -274,7 +274,7 @@ class MediaService : MediaLibraryService() {
             .build()
     }
 
-    private fun getRenderersFactory() = DownloadUtil.buildRenderersFactory(this, false)
+    private fun getRenderersFactory() = DownloadUtil.buildPlaybackRenderersFactory(this)
 
     private fun getMediaSourceFactory() =
         DefaultMediaSourceFactory(this).setDataSourceFactory(DownloadUtil.getDataSourceFactory(this))
