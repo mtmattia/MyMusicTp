@@ -59,6 +59,7 @@ import com.cappielloantonio.tempo.ui.adapter.YearAdapter;
 import com.cappielloantonio.tempo.ui.dialog.HomeRearrangementDialog;
 import com.cappielloantonio.tempo.ui.dialog.PlaylistEditorDialog;
 import com.cappielloantonio.tempo.util.Constants;
+import com.cappielloantonio.tempo.util.CoverPaletteUtil;
 import com.cappielloantonio.tempo.util.DownloadUtil;
 import com.cappielloantonio.tempo.util.MappingUtil;
 import com.cappielloantonio.tempo.util.MusicUtil;
@@ -113,6 +114,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
             // Give the server a moment to register the scrobble, then reload.
             refreshHandler.removeCallbacks(listeningRefresh);
             refreshHandler.postDelayed(listeningRefresh, 3000);
+            tintBackground(mediaItem);
         }
     };
 
@@ -304,15 +306,24 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
             }, 1200);
         });
 
-        bind.homeShuffleAllButton.setOnClickListener(v -> playShuffled(homeViewModel.getRandomShuffleSample()));
-        bind.homeChipShuffleStarred.setOnClickListener(v -> playShuffled(homeViewModel.getStarredShuffleSample()));
-        bind.homeChipRecentlyPlayed.setOnClickListener(v -> openAlbumList(Constants.ALBUM_RECENTLY_PLAYED));
-        bind.homeChipMostPlayed.setOnClickListener(v -> openAlbumList(Constants.ALBUM_MOST_PLAYED));
-        bind.homeChipRecentlyAdded.setOnClickListener(v -> openAlbumList(Constants.ALBUM_RECENTLY_ADDED));
-        bind.homeChipCustomize.setOnClickListener(v -> {
-            HomeRearrangementDialog dialog = new HomeRearrangementDialog();
-            dialog.show(requireActivity().getSupportFragmentManager(), null);
-        });
+        bind.homeTileShuffle.setOnClickListener(v -> playShuffled(homeViewModel.getRandomShuffleSample()));
+        bind.homeTileStarred.setOnClickListener(v -> playShuffled(homeViewModel.getStarredShuffleSample()));
+        bind.homeTileRecent.setOnClickListener(v -> openAlbumList(Constants.ALBUM_RECENTLY_PLAYED));
+        bind.homeTileMostPlayed.setOnClickListener(v -> openAlbumList(Constants.ALBUM_MOST_PLAYED));
+    }
+
+    private void openAlbumList(String key) {
+        Bundle bundle = new Bundle();
+        bundle.putString(key, key);
+        activity.navController.navigate(R.id.action_homeFragment_to_albumListPageFragment, bundle);
+    }
+
+    /** Tints the home background with the colors of the cover currently playing. */
+    private void tintBackground(@Nullable MediaItem mediaItem) {
+        if (bind == null || getView() == null) return;
+        String coverArtId = mediaItem != null && mediaItem.mediaMetadata.extras != null
+                ? mediaItem.mediaMetadata.extras.getString("coverArtId") : null;
+        CoverPaletteUtil.applyGradient(this, coverArtId, bind.homeSwipeRefresh, null);
     }
 
     private void playShuffled(LiveData<List<Child>> source) {
@@ -336,12 +347,6 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                 activity.setBottomSheetInPeek(true);
             }
         });
-    }
-
-    private void openAlbumList(String key) {
-        Bundle bundle = new Bundle();
-        bundle.putString(key, key);
-        activity.navController.navigate(R.id.action_homeFragment_to_albumListPageFragment, bundle);
     }
 
     private void initSyncStarredView() {
@@ -849,6 +854,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     public void reorder() {
         if (bind != null && homeViewModel.getHomeSectorList() != null) {
             bind.homeLinearLayoutContainer.removeAllViews();
+            boolean shuffleSectorPlaced = false;
 
             for (HomeSector sector : homeViewModel.getHomeSectorList()) {
                 if (!sector.isVisible()) continue;
@@ -892,6 +898,8 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                         break;
                     case Constants.HOME_SECTOR_RECENTLY_ADDED:
                         bind.homeLinearLayoutContainer.addView(bind.homeRecentlyAddedAlbumsSector);
+                        bind.homeLinearLayoutContainer.addView(bind.homeShuffleSector);
+                        shuffleSectorPlaced = true;
                         break;
                     case Constants.HOME_SECTOR_PINNED_PLAYLISTS:
                         bind.homeLinearLayoutContainer.addView(bind.pinnedPlaylistsSector);
@@ -901,6 +909,9 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                         break;
                 }
             }
+
+            // "Recently added" hidden by the user: keep the shuffle cards at the top
+            if (!shuffleSectorPlaced) bind.homeLinearLayoutContainer.addView(bind.homeShuffleSector, 0);
 
             bind.homeLinearLayoutContainer.addView(bind.homeSectorRearrangementButton);
         }
@@ -951,6 +962,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                 if (future != mediaBrowserListenableFuture) return;
                 connectedMediaBrowser = future.get();
                 connectedMediaBrowser.addListener(homePlayerListener);
+                tintBackground(connectedMediaBrowser.getCurrentMediaItem());
             } catch (Exception ignored) {
             }
         }, MoreExecutors.directExecutor());

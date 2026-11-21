@@ -17,82 +17,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-    <!--  Quick actions: always visible, independent of the sector list  -->
-    <LinearLayout
-        android:id="@+id/home_quick_actions"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingTop="12dp">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/home_shuffle_all_button"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginHorizontal="16dp"
-            android:text="@string/home_quick_shuffle_library"
-            android:textSize="16sp"
-            app:cornerRadius="28dp"
-            app:icon="@drawable/ic_shuffle"
-            app:iconGravity="textStart"
-            app:iconPadding="12dp" />
-
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:clipToPadding="false"
-            android:paddingHorizontal="16dp"
-            android:scrollbars="none">
-
-            <com.google.android.material.chip.ChipGroup
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:singleLine="true">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/home_chip_shuffle_starred"
-                    style="@style/Widget.Material3.Chip.Assist"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/home_quick_shuffle_starred"
-                    app:chipIcon="@drawable/ic_favorite" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/home_chip_recently_played"
-                    style="@style/Widget.Material3.Chip.Assist"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/home_quick_recently_played"
-                    app:chipIcon="@drawable/ic_history" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/home_chip_most_played"
-                    style="@style/Widget.Material3.Chip.Assist"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/home_quick_most_played"
-                    app:chipIcon="@drawable/ic_star" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/home_chip_recently_added"
-                    style="@style/Widget.Material3.Chip.Assist"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/home_quick_recently_added" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/home_chip_customize"
-                    style="@style/Widget.Material3.Chip.Assist"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/home_option_reorganize"
-                    app:chipIcon="@drawable/ic_sort_list" />
-            </com.google.android.material.chip.ChipGroup>
-        </HorizontalScrollView>
-    </LinearLayout>
-
     <LinearLayout
         android:id="@+id/home_linear_layout_container"
         android:layout_width="match_parent"
@@ -804,6 +728,153 @@
                 android:paddingTop="8dp"
                 android:paddingEnd="8dp"
                 android:paddingBottom="8dp" />
+        </LinearLayout>
+
+        <!--  Quick tiles (shuffle & shortcuts), shown right below "Recently added"  -->
+        <LinearLayout
+            android:id="@+id/home_shuffle_sector"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="12dp">
+
+            <LinearLayout
+                android:id="@+id/home_tile_shuffle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_glass_tile"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="12dp">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_tile_icon_shuffle"
+                    android:importantForAccessibility="no"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_shuffle"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    style="@style/LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/home_tile_shuffle"
+                    android:textColor="@color/titleTextColor" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/home_tile_starred"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_glass_tile"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="12dp">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_tile_icon_favorite"
+                    android:importantForAccessibility="no"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_favorite"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    style="@style/LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/home_tile_starred"
+                    android:textColor="@color/titleTextColor" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/home_tile_recent"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_glass_tile"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="12dp">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_tile_icon_recent"
+                    android:importantForAccessibility="no"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_history"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    style="@style/LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/home_tile_recent"
+                    android:textColor="@color/titleTextColor" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/home_tile_most_played"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                
+                android:background="@drawable/bg_glass_tile"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="12dp">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_tile_icon_most"
+                    android:importantForAccessibility="no"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_graphic_eq"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    style="@style/LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/home_tile_most_played"
+                    android:textColor="@color/titleTextColor" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Playlists -->

@@ -141,11 +141,10 @@
     <string name="home_title_starred_tracks">★ Starred tracks</string>
     <string name="home_title_starred_tracks_see_all_button">See all</string>
     <string name="home_title_top_songs">Your top songs</string>
-    <string name="home_quick_shuffle_library">Shuffle my library</string>
-    <string name="home_quick_shuffle_starred">Shuffle favorites</string>
-    <string name="home_quick_recently_played">Recently played</string>
-    <string name="home_quick_most_played">Most played</string>
-    <string name="home_quick_recently_added">Recently added</string>
+    <string name="home_tile_shuffle">Shuffle</string>
+    <string name="home_tile_starred">Favorites</string>
+    <string name="home_tile_recent">Recent</string>
+    <string name="home_tile_most_played">Top played</string>
     <string name="home_quick_nothing_to_play">Nothing to play</string>
     <string name="home_option_reorganize">Reorganize</string>
     <string name="label_dot_separator" translatable="false">•</string>

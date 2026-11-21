@@ -25,6 +25,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.cappielloantonio.tempo.R;
 import com.cappielloantonio.tempo.databinding.FragmentPlayerBottomSheetBinding;
 import com.cappielloantonio.tempo.glide.CustomGlideRequest;
+import com.cappielloantonio.tempo.util.CoverPaletteUtil;
 import com.cappielloantonio.tempo.service.MediaManager;
 import com.cappielloantonio.tempo.service.MediaService;
 import com.cappielloantonio.tempo.subsonic.models.PlayQueue;
@@ -168,6 +169,10 @@ public class PlayerBottomSheetFragment extends Fragment {
                     .from(requireContext(), mediaMetadata.extras.getString("coverArtId"), CustomGlideRequest.ResourceType.Song)
                     .build()
                     .into(bind.playerHeaderLayout.playerHeaderMediaCoverImage);
+
+            CoverPaletteUtil.applyGradient(this, mediaMetadata.extras.getString("coverArtId"),
+                    bind.playerBodyLayout.playerBodyBottomSheetViewPager,
+                    bind.playerHeaderLayout.getRoot());
 
             bind.playerHeaderLayout.playerHeaderMediaTitleLabel.setVisibility(mediaMetadata.extras.getString("title") != null && !Objects.equals(mediaMetadata.extras.getString("title"), "") ? View.VISIBLE : View.GONE);
             bind.playerHeaderLayout.playerHeaderMediaArtistLabel.setVisibility(mediaMetadata.extras.getString("artist") != null && !Objects.equals(mediaMetadata.extras.getString("artist"), "") ? View.VISIBLE : View.GONE);

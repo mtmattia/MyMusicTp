@@ -19,6 +19,10 @@ import androidx.media3.datasource.cache.NoOpCacheEvictor;
 import androidx.media3.datasource.cache.SimpleCache;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.RenderersFactory;
+import androidx.media3.exoplayer.audio.AudioSink;
+import androidx.media3.exoplayer.audio.DefaultAudioSink;
+import androidx.media3.common.audio.AudioProcessor;
+import com.cappielloantonio.tempo.service.AudioLevelProcessor;
 import androidx.media3.exoplayer.offline.DownloadManager;
 import androidx.media3.exoplayer.offline.DownloadNotificationHelper;
 
@@ -54,6 +58,28 @@ public final class DownloadUtil {
 
     public static boolean useExtensionRenderers() {
         return true;
+    }
+
+    /**
+     * Renderers for playback: same as {@link #buildRenderersFactory} plus an
+     * {@link AudioLevelProcessor} in the audio sink to feed the wave visualizer.
+     */
+    public static RenderersFactory buildPlaybackRenderersFactory(Context context) {
+        @DefaultRenderersFactory.ExtensionRendererMode int extensionRendererMode =
+                useExtensionRenderers()
+                        ? DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON
+                        : DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF;
+
+        return new DefaultRenderersFactory(context.getApplicationContext()) {
+            @Override
+            protected AudioSink buildAudioSink(Context ctx, boolean enableFloatOutput, boolean enableAudioTrackPlaybackParams) {
+                return new DefaultAudioSink.Builder(ctx)
+                        .setEnableFloatOutput(enableFloatOutput)
+                        .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                        .setAudioProcessors(new AudioProcessor[]{new AudioLevelProcessor()})
+                        .build();
+            }
+        }.setExtensionRendererMode(extensionRendererMode);
     }
 
     public static RenderersFactory buildRenderersFactory(Context context, boolean preferExtensionRenderer) {
