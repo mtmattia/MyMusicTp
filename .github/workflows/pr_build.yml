@@ -24,13 +24,13 @@ jobs:
         run: bash ./gradlew --warning-mode all compilePlayDebugJavaWithJavac compileNotquitemyDebugJavaWithJavac assembleTempoDebug
 
       - name: Upload debug APK
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: app-tempo-debug
           path: app/build/outputs/apk/tempo/debug/*.apk
 
       - name: Upload Room schemas
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: room-schemas
           path: app/schemas/
