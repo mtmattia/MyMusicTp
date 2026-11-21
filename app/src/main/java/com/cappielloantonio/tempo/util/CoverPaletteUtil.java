@@ -1,6 +1,7 @@
 package com.cappielloantonio.tempo.util;
 
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -24,21 +25,28 @@ import com.cappielloantonio.tempo.glide.CustomGlideRequest;
 import com.google.android.material.color.MaterialColors;
 
 /**
- * Extracts a tint from an album cover and paints it as a soft top-to-bottom
- * gradient that fades into the theme surface, so text stays readable.
+ * Colors taken from album covers. The background tint is normalised in HSL
+ * (fixed lightness, capped saturation) so it is clearly visible even for dark
+ * covers, yet text on top stays readable in both themes.
  */
 public final class CoverPaletteUtil {
     private static final int TAG_COLOR = R.id.cover_palette_color_tag;
 
+    public interface TintCallback {
+        void onTint(@ColorInt int background, @ColorInt int accent);
+    }
+
     private CoverPaletteUtil() {
     }
 
-    public static void applyGradient(@NonNull Fragment fragment, @Nullable String coverArtId, @NonNull View target, @Nullable View solidTarget) {
+    /** Loads the cover and returns a background tint and a vivid accent. Falls back to theme colors. */
+    public static void extract(@NonNull Fragment fragment, @Nullable String coverArtId, @NonNull TintCallback callback) {
         Context context = fragment.requireContext();
-        int surface = MaterialColors.getColor(target, com.google.android.material.R.attr.colorSurface);
+        int surface = MaterialColors.getColor(context, com.google.android.material.R.attr.colorSurface, Color.BLACK);
+        int primary = MaterialColors.getColor(context, com.google.android.material.R.attr.colorPrimary, Color.WHITE);
 
         if (coverArtId == null || Preferences.isDataSavingMode()) {
-            animateTo(target, solidTarget, surface, surface);
+            callback.onTint(surface, primary);
             return;
         }
 
@@ -49,15 +57,24 @@ public final class CoverPaletteUtil {
                 .into(new CustomTarget<Bitmap>() {
                     @Override
                     public void onResourceReady(@NonNull Bitmap bitmap, @Nullable Transition<? super Bitmap> transition) {
-                        Palette.from(bitmap).maximumColorCount(16).generate(palette -> {
+                        Palette.from(bitmap).maximumColorCount(24).generate(palette -> {
                             if (!fragment.isAdded()) return;
-                            animateTo(target, solidTarget, pickTint(context, palette, surface), surface);
+                            Palette.Swatch swatch = palette == null ? null : firstNonNull(
+                                    palette.getVibrantSwatch(), palette.getDominantSwatch(),
+                                    palette.getMutedSwatch(), palette.getDarkVibrantSwatch(), palette.getLightVibrantSwatch());
+                            if (swatch == null) {
+                                callback.onTint(surface, primary);
+                                return;
+                            }
+                            boolean dark = isDark(context);
+                            callback.onTint(normalise(swatch.getRgb(), dark ? 0.22f : 0.86f, 0.70f),
+                                    normalise(swatch.getRgb(), dark ? 0.70f : 0.38f, 0.85f));
                         });
                     }
 
                     @Override
                     public void onLoadFailed(@Nullable Drawable errorDrawable) {
-                        animateTo(target, solidTarget, surface, surface);
+                        callback.onTint(surface, primary);
                     }
 
                     @Override
@@ -66,62 +83,43 @@ public final class CoverPaletteUtil {
                 });
     }
 
-    public interface AccentCallback {
-        void onAccent(@ColorInt int color);
+    /** Paints {@code target} with a gradient from the cover tint to the surface. */
+    public static void applyGradient(@NonNull Fragment fragment, @Nullable String coverArtId, @NonNull View target, @Nullable View solidTarget) {
+        extract(fragment, coverArtId, (background, accent) -> animate(target, solidTarget, background, surfaceOf(target)));
     }
 
-    /** Vivid accent from the cover (for waves and highlights), or the theme primary as fallback. */
-    public static void extractAccent(@NonNull Fragment fragment, @Nullable String coverArtId, @NonNull AccentCallback callback) {
-        Context context = fragment.requireContext();
-        int fallback = MaterialColors.getColor(context, com.google.android.material.R.attr.colorPrimary, Color.WHITE);
+    /**
+     * App-wide theme: the whole window behind every screen takes the colors of
+     * the cover that is playing, plus the status bar.
+     */
+    public static void applyAppTheme(@NonNull Fragment fragment, @Nullable String coverArtId, View... extraGradientTargets) {
+        Activity activity = fragment.getActivity();
+        if (activity == null) return;
+        View root = activity.findViewById(R.id.drawer_layout);
 
-        if (coverArtId == null || Preferences.isDataSavingMode()) {
-            callback.onAccent(fallback);
-            return;
-        }
-
-        Glide.with(fragment)
-                .asBitmap()
-                .load(CustomGlideRequest.createUrl(coverArtId, 128))
-                .override(96, 96)
-                .into(new CustomTarget<Bitmap>() {
-                    @Override
-                    public void onResourceReady(@NonNull Bitmap bitmap, @Nullable Transition<? super Bitmap> transition) {
-                        Palette.from(bitmap).maximumColorCount(16).generate(palette -> {
-                            if (!fragment.isAdded() || palette == null) return;
-                            boolean dark = (context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-                            Palette.Swatch swatch = dark
-                                    ? firstNonNull(palette.getLightVibrantSwatch(), palette.getVibrantSwatch(), palette.getLightMutedSwatch(), palette.getDominantSwatch())
-                                    : firstNonNull(palette.getDarkVibrantSwatch(), palette.getVibrantSwatch(), palette.getDarkMutedSwatch(), palette.getDominantSwatch());
-                            callback.onAccent(swatch != null ? swatch.getRgb() : fallback);
-                        });
-                    }
-
-                    @Override
-                    public void onLoadFailed(@Nullable Drawable errorDrawable) {
-                        callback.onAccent(fallback);
-                    }
-
-                    @Override
-                    public void onLoadCleared(@Nullable Drawable placeholder) {
-                    }
-                });
+        extract(fragment, coverArtId, (background, accent) -> {
+            int surface = surfaceOf(root);
+            if (root != null) animate(root, null, background, surface);
+            for (View v : extraGradientTargets) if (v != null) animate(v, null, background, surface);
+            activity.getWindow().setStatusBarColor(background);
+        });
     }
 
     @ColorInt
-    private static int pickTint(Context context, @Nullable Palette palette, @ColorInt int surface) {
-        if (palette == null) return surface;
+    public static int normalise(@ColorInt int color, float lightness, float maxSaturation) {
+        float[] hsl = new float[3];
+        ColorUtils.colorToHSL(color, hsl);
+        hsl[1] = Math.min(maxSaturation, Math.max(hsl[1], 0.18f));
+        hsl[2] = lightness;
+        return ColorUtils.HSLToColor(hsl);
+    }
 
-        boolean dark = (context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+    private static boolean isDark(Context context) {
+        return (context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+    }
 
-        Palette.Swatch swatch = dark
-                ? firstNonNull(palette.getDarkVibrantSwatch(), palette.getVibrantSwatch(), palette.getDarkMutedSwatch(), palette.getDominantSwatch())
-                : firstNonNull(palette.getLightVibrantSwatch(), palette.getVibrantSwatch(), palette.getLightMutedSwatch(), palette.getDominantSwatch());
-
-        if (swatch == null) return surface;
-
-        // Blend with the surface: strong enough to feel like the cover, soft enough for text.
-        return ColorUtils.blendARGB(surface, swatch.getRgb(), dark ? 0.55f : 0.40f);
+    private static int surfaceOf(@Nullable View view) {
+        return view == null ? Color.BLACK : MaterialColors.getColor(view, com.google.android.material.R.attr.colorSurface);
     }
 
     @Nullable
@@ -130,19 +128,20 @@ public final class CoverPaletteUtil {
         return null;
     }
 
-    private static void animateTo(View target, @Nullable View solidTarget, @ColorInt int top, @ColorInt int surface) {
+    private static void animate(View target, @Nullable View solidTarget, @ColorInt int top, @ColorInt int surface) {
         Object previous = target.getTag(TAG_COLOR);
         int from = previous instanceof Integer ? (Integer) previous : surface;
         target.setTag(TAG_COLOR, top);
 
-        GradientDrawable gradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{from, surface});
+        GradientDrawable gradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{from, ColorUtils.blendARGB(from, surface, 0.45f), surface});
         target.setBackground(gradient);
 
         ValueAnimator animator = ValueAnimator.ofArgb(from, top);
         animator.setDuration(450);
         animator.addUpdateListener(a -> {
             int c = (int) a.getAnimatedValue();
-            gradient.setColors(new int[]{c, surface});
+            gradient.setColors(new int[]{c, ColorUtils.blendARGB(c, surface, 0.45f), surface});
             if (solidTarget != null) solidTarget.setBackgroundColor(c);
         });
         animator.start();

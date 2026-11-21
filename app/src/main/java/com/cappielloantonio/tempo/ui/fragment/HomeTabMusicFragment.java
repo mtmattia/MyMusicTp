@@ -59,7 +59,6 @@ import com.cappielloantonio.tempo.ui.adapter.YearAdapter;
 import com.cappielloantonio.tempo.ui.dialog.HomeRearrangementDialog;
 import com.cappielloantonio.tempo.ui.dialog.PlaylistEditorDialog;
 import com.cappielloantonio.tempo.util.Constants;
-import com.cappielloantonio.tempo.util.CoverPaletteUtil;
 import com.cappielloantonio.tempo.util.DownloadUtil;
 import com.cappielloantonio.tempo.util.MappingUtil;
 import com.cappielloantonio.tempo.util.MusicUtil;
@@ -114,7 +113,6 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
             // Give the server a moment to register the scrobble, then reload.
             refreshHandler.removeCallbacks(listeningRefresh);
             refreshHandler.postDelayed(listeningRefresh, 3000);
-            tintBackground(mediaItem);
         }
     };
 
@@ -318,13 +316,6 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
         activity.navController.navigate(R.id.action_homeFragment_to_albumListPageFragment, bundle);
     }
 
-    /** Tints the home background with the colors of the cover currently playing. */
-    private void tintBackground(@Nullable MediaItem mediaItem) {
-        if (bind == null || getView() == null) return;
-        String coverArtId = mediaItem != null && mediaItem.mediaMetadata.extras != null
-                ? mediaItem.mediaMetadata.extras.getString("coverArtId") : null;
-        CoverPaletteUtil.applyGradient(this, coverArtId, bind.homeSwipeRefresh, null);
-    }
 
     private void playShuffled(LiveData<List<Child>> source) {
         source.observe(getViewLifecycleOwner(), new Observer<List<Child>>() {
@@ -962,7 +953,6 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                 if (future != mediaBrowserListenableFuture) return;
                 connectedMediaBrowser = future.get();
                 connectedMediaBrowser.addListener(homePlayerListener);
-                tintBackground(connectedMediaBrowser.getCurrentMediaItem());
             } catch (Exception ignored) {
             }
         }, MoreExecutors.directExecutor());

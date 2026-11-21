@@ -121,7 +121,7 @@ public class PlayerControllerFragment extends Fragment {
     }
 
     private void initQuickActionView() {
-        playerQuickActionView.setBackgroundColor(SurfaceColors.getColorForElevation(requireContext(), 8));
+        playerQuickActionView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
 
         playerOpenQueueButton.setOnClickListener(view -> {
             PlayerBottomSheetFragment playerBottomSheetFragment = (PlayerBottomSheetFragment) requireActivity().getSupportFragmentManager().findFragmentByTag("PlayerBottomSheet");
@@ -172,8 +172,8 @@ public class PlayerControllerFragment extends Fragment {
     private void setMetadata(MediaMetadata mediaMetadata) {
         if (playerAudioWaveView != null && isAdded()) {
             String coverArtId = mediaMetadata.extras != null ? mediaMetadata.extras.getString("coverArtId") : null;
-            CoverPaletteUtil.extractAccent(this, coverArtId, color -> {
-                if (playerAudioWaveView != null) playerAudioWaveView.setTint(color);
+            CoverPaletteUtil.extract(this, coverArtId, (background, accent) -> {
+                if (playerAudioWaveView != null) playerAudioWaveView.setTint(accent);
             });
         }
 

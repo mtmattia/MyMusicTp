@@ -4,7 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Path;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -12,30 +12,43 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.media3.common.C;
+import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 
 import com.cappielloantonio.tempo.service.AudioLevelBus;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Random;
+
 /**
- * Soft overlapping waves drawn around the seek bar. Their swell is centered on
- * the playback position and their height follows the loudness of the music.
+ * Voice-message style bars that grow from the start of the track up to the
+ * playback point. Each bar keeps the loudness heard at that moment, so every
+ * song draws its own shape; the newest bars ripple like a wave with the music.
+ * Nothing is drawn after the playback point.
  */
 public class AudioWaveView extends View {
-    private static final int WAVES = 3;
-    private static final float[] SPEED = {1.6f, -1.1f, 2.3f};
-    private static final float[] CYCLES = {2.2f, 3.1f, 1.6f};
-    private static final float[] ALPHA = {0.55f, 0.35f, 0.25f};
+    private static final int TAIL = 7; // bars near the playhead that ripple live
+    private static final int CACHE = 12;
 
-    private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Path path = new Path();
+    private final Paint barPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF rect = new RectF();
     private final float[] reading = new float[2];
+    private final float barWidth;
+    private final float gap;
+
+    /** Per-track history of bar heights (0 = not heard yet). */
+    private final Map<String, float[]> histories = new LinkedHashMap<String, float[]>(CACHE, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, float[]> eldest) {
+            return size() > CACHE;
+        }
+    };
 
     @Nullable
     private Player player;
     private int tint = Color.WHITE;
-    private float level = 0f;
-    private float brightness = 0.3f;
+    private float live = 0f;
     private float phase = 0f;
     private long lastFrameNs = 0;
 
@@ -45,13 +58,26 @@ public class AudioWaveView extends View {
 
     public AudioWaveView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        fill.setStyle(Paint.Style.FILL);
-        line.setStyle(Paint.Style.STROKE);
-        line.setStrokeWidth(getResources().getDisplayMetrics().density);
+        float d = getResources().getDisplayMetrics().density;
+        barWidth = 3f * d;
+        gap = 2f * d;
+        barPaint.setStyle(Paint.Style.FILL);
     }
 
+    // Restart the animation whenever playback state changes (otherwise a frame
+    // drawn while paused would never schedule the next one).
+    private final Player.Listener listener = new Player.Listener() {
+        @Override
+        public void onEvents(Player player, Player.Events events) {
+            lastFrameNs = 0;
+            postInvalidateOnAnimation();
+        }
+    };
+
     public void setPlayer(@Nullable Player player) {
+        if (this.player != null) this.player.removeListener(listener);
         this.player = player;
+        if (player != null) player.addListener(listener);
         postInvalidateOnAnimation();
     }
 
@@ -68,68 +94,86 @@ public class AudioWaveView extends View {
         float dt = lastFrameNs == 0 ? 0f : Math.min(0.05f, (now - lastFrameNs) / 1e9f);
         lastFrameNs = now;
 
-        boolean playing = player != null && player.isPlaying();
-        float targetLevel = 0f;
-        if (playing && AudioLevelBus.read(reading)) {
-            targetLevel = reading[0];
-            brightness += (reading[1] - brightness) * Math.min(1f, dt * 4f);
-        }
-        // Fast attack, slow release, so peaks feel punchy but not jittery.
-        float k = targetLevel > level ? 18f : 5f;
-        level += (targetLevel - level) * Math.min(1f, dt * k);
-        phase += dt * (1.2f + level * 3f);
+        Player p = player;
+        if (p == null) return;
 
-        float w = getWidth();
+        int count = Math.max(1, (int) ((getWidth() + gap) / (barWidth + gap)));
+        String key = mediaKey(p);
+        float[] history = histories.get(key);
+        if (history == null || history.length != count) {
+            history = new float[count];
+            histories.put(key, history);
+        }
+
+        boolean playing = p.isPlaying();
+        float target;
+        if (playing && AudioLevelBus.read(reading)) {
+            target = reading[0];
+        } else if (playing) {
+            // No PCM levels (e.g. format not measurable): keep moving with a soft synthetic pulse
+            float t = now / 1e9f;
+            target = 0.35f + 0.2f * (float) Math.sin(t * 2.7f) + 0.12f * (float) Math.sin(t * 6.3f + key.hashCode());
+        } else {
+            target = 0f;
+        }
+        float k = target > live ? 16f : 5f;
+        live += (target - live) * Math.min(1f, dt * k);
+        phase += dt * (3f + live * 6f);
+
+        float fraction = progressFraction(p);
+        int head = Math.min(count - 1, (int) (fraction * count));
+
+        // Record what is heard now at the playhead; fill gaps left by seeking with a per-song pattern
+        if (playing) history[head] = history[head] == 0f ? live : history[head] * 0.7f + live * 0.3f;
+        fillGaps(history, head, key);
+
         float h = getHeight();
         float mid = h / 2f;
-        float center = progressFraction();
-        float maxAmp = h * 0.46f;
+        float minH = barWidth;
+        float maxH = h * 0.95f;
 
-        for (int i = 0; i < WAVES; i++) {
-            float amp = maxAmp * (0.06f + level * (1f - i * 0.18f));
-            float cycles = CYCLES[i] + brightness * 2.5f;
-            buildWave(w, mid, amp, cycles, phase * SPEED[i] + i * 1.3f, center);
-            fill.setColor(ColorUtils.setAlphaComponent(tint, (int) (255 * ALPHA[i] * 0.55f)));
-            canvas.drawPath(path, fill);
+        for (int i = 0; i <= head; i++) {
+            float v = Math.max(0.08f, Math.min(1f, history[i]));
+            int fromHead = head - i;
+            if (fromHead < TAIL) {
+                // Wave tail: the latest bars breathe with the live level
+                float wave = (float) Math.sin(phase - fromHead * 0.9f);
+                v = Math.min(1f, v * (1f + 0.45f * wave * live) + live * 0.25f * (1f - fromHead / (float) TAIL));
+            }
+            float bh = minH + (maxH - minH) * v;
+            float x = i * (barWidth + gap);
+            rect.set(x, mid - bh / 2f, x + barWidth, mid + bh / 2f);
+
+            // Older bars slightly softer, newest fully opaque
+            float age = Math.min(1f, fromHead / 40f);
+            barPaint.setColor(ColorUtils.setAlphaComponent(tint, (int) (255 * (1f - 0.35f * age))));
+            canvas.drawRoundRect(rect, barWidth / 2f, barWidth / 2f, barPaint);
         }
 
-        line.setColor(ColorUtils.setAlphaComponent(tint, 140));
-        canvas.drawLine(0, mid, w, mid, line);
-
-        if (playing || level > 0.005f) postInvalidateOnAnimation();
+        if (playing || live > 0.005f) postInvalidateOnAnimation();
         else lastFrameNs = 0;
     }
 
-    private float progressFraction() {
-        if (player == null) return 0.5f;
-        long duration = player.getDuration();
-        if (duration == C.TIME_UNSET || duration <= 0) return 0.5f;
-        return Math.max(0f, Math.min(1f, (float) player.getCurrentPosition() / duration));
+    private static void fillGaps(float[] history, int head, String key) {
+        Random random = null;
+        for (int i = 0; i < head; i++) {
+            if (history[i] == 0f) {
+                if (random == null) random = new Random(key.hashCode() * 31L + i);
+                float prev = i > 0 ? history[i - 1] : 0.4f;
+                history[i] = Math.max(0.1f, Math.min(0.9f, prev * 0.6f + (0.15f + random.nextFloat() * 0.6f) * 0.4f));
+            }
+        }
     }
 
-    /** A closed lens-shaped wave: upper and lower edge mirrored, swelling around {@code center}. */
-    private void buildWave(float w, float mid, float amp, float cycles, float phase, float center) {
-        path.reset();
-        int steps = 64;
-        float spread = 0.35f; // width of the swell, as a fraction of the view
-
-        path.moveTo(0, mid);
-        for (int s = 0; s <= steps; s++) {
-            float t = (float) s / steps;
-            path.lineTo(t * w, mid - envelope(t, center, spread) * amp * (0.6f + 0.4f * (float) Math.sin(t * cycles * Math.PI * 2 + phase)));
-        }
-        for (int s = steps; s >= 0; s--) {
-            float t = (float) s / steps;
-            path.lineTo(t * w, mid + envelope(t, center, spread) * amp * (0.6f + 0.4f * (float) Math.cos(t * cycles * Math.PI * 2 - phase)));
-        }
-        path.close();
+    private static String mediaKey(Player p) {
+        MediaItem item = p.getCurrentMediaItem();
+        return item != null ? item.mediaId : "none";
     }
 
-    private static float envelope(float t, float center, float spread) {
-        float d = (t - center) / spread;
-        float bell = (float) Math.exp(-d * d);
-        float edges = (float) Math.sin(Math.PI * t); // taper to a point at both ends
-        return 0.25f * edges + 0.75f * bell * edges;
+    private static float progressFraction(Player p) {
+        long duration = p.getDuration();
+        if (duration == C.TIME_UNSET || duration <= 0) return 0f;
+        return Math.max(0f, Math.min(1f, (float) p.getCurrentPosition() / duration));
     }
 
     @Override

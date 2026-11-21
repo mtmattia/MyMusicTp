@@ -24,7 +24,8 @@ public final class AudioLevelProcessor extends BaseAudioProcessor {
     @NonNull
     @Override
     protected AudioFormat onConfigure(@NonNull AudioFormat inputAudioFormat) throws UnhandledAudioFormatException {
-        if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT && inputAudioFormat.encoding != C.ENCODING_PCM_FLOAT) {
+        int e = inputAudioFormat.encoding;
+        if (e != C.ENCODING_PCM_16BIT && e != C.ENCODING_PCM_FLOAT && e != C.ENCODING_PCM_24BIT && e != C.ENCODING_PCM_32BIT) {
             // Leave other formats alone (inactive processor = untouched audio).
             return AudioFormat.NOT_SET;
         }
@@ -57,6 +58,28 @@ public final class AudioLevelProcessor extends BaseAudioProcessor {
             while (buf.remaining() >= frameBytes) {
                 float sample = buf.getShort() / 32768f;
                 for (int c = 1; c < channels; c++) buf.getShort();
+                sumSquares += sample * sample;
+                if ((sample >= 0) != (previous >= 0)) crossings++;
+                previous = sample;
+                frames++;
+            }
+        } else if (encoding == C.ENCODING_PCM_24BIT) {
+            // Hi-res FLAC often decodes to packed 24-bit little-endian
+            int frameBytes = 3 * channels;
+            while (buf.remaining() >= frameBytes) {
+                int b0 = buf.get() & 0xFF, b1 = buf.get() & 0xFF, b2 = buf.get();
+                float sample = ((b2 << 16) | (b1 << 8) | b0) / 8388608f;
+                for (int c = 1; c < channels; c++) { buf.get(); buf.get(); buf.get(); }
+                sumSquares += sample * sample;
+                if ((sample >= 0) != (previous >= 0)) crossings++;
+                previous = sample;
+                frames++;
+            }
+        } else if (encoding == C.ENCODING_PCM_32BIT) {
+            int frameBytes = 4 * channels;
+            while (buf.remaining() >= frameBytes) {
+                float sample = buf.getInt() / 2147483648f;
+                for (int c = 1; c < channels; c++) buf.getInt();
                 sumSquares += sample * sample;
                 if ((sample >= 0) != (previous >= 0)) crossings++;
                 previous = sample;

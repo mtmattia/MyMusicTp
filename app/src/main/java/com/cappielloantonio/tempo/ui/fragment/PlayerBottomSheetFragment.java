@@ -170,9 +170,18 @@ public class PlayerBottomSheetFragment extends Fragment {
                     .build()
                     .into(bind.playerHeaderLayout.playerHeaderMediaCoverImage);
 
-            CoverPaletteUtil.applyGradient(this, mediaMetadata.extras.getString("coverArtId"),
-                    bind.playerBodyLayout.playerBodyBottomSheetViewPager,
-                    bind.playerHeaderLayout.getRoot());
+            CoverPaletteUtil.applyAppTheme(this, mediaMetadata.extras.getString("coverArtId"),
+                    bind.playerBodyLayout.playerBodyBottomSheetViewPager);
+
+            // Mini player + bottom navigation form one dock tinted like the cover
+            CoverPaletteUtil.extract(this, mediaMetadata.extras.getString("coverArtId"), (background, accent) -> {
+                if (bind == null) return;
+                int dock = androidx.core.graphics.ColorUtils.blendARGB(background,
+                        SurfaceColors.getColorForElevation(requireContext(), 8), 0.35f);
+                bind.playerHeaderLayout.getRoot().setBackgroundColor(dock);
+                View nav = requireActivity().findViewById(R.id.bottom_navigation);
+                if (nav != null) nav.setBackgroundColor(dock);
+            });
 
             bind.playerHeaderLayout.playerHeaderMediaTitleLabel.setVisibility(mediaMetadata.extras.getString("title") != null && !Objects.equals(mediaMetadata.extras.getString("title"), "") ? View.VISIBLE : View.GONE);
             bind.playerHeaderLayout.playerHeaderMediaArtistLabel.setVisibility(mediaMetadata.extras.getString("artist") != null && !Objects.equals(mediaMetadata.extras.getString("artist"), "") ? View.VISIBLE : View.GONE);
