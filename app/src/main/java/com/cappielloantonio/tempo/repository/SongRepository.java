@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.cappielloantonio.tempo.App;
 import com.cappielloantonio.tempo.subsonic.base.ApiResponse;
 import com.cappielloantonio.tempo.subsonic.models.Child;
+import com.cappielloantonio.tempo.util.SmartMix;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,22 +54,8 @@ public class SongRepository {
     public MutableLiveData<List<Child>> getInstantMix(String id, int count) {
         MutableLiveData<List<Child>> instantMix = new MutableLiveData<>();
 
-        App.getSubsonicClientInstance(false)
-                .getBrowsingClient()
-                .getSimilarSongs2(id, count)
-                .enqueue(new Callback<ApiResponse>() {
-                    @Override
-                    public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
-                        if (response.isSuccessful() && response.body() != null && response.body().getSubsonicResponse().getSimilarSongs2() != null) {
-                            instantMix.setValue(response.body().getSubsonicResponse().getSimilarSongs2().getSongs());
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
-                        instantMix.setValue(null);
-                    }
-                });
+        // Similar + same genre/artist + discovery, weighted random, skipping recent plays
+        SmartMix.fromSongId(id, count, instantMix::setValue);
 
         return instantMix;
     }
