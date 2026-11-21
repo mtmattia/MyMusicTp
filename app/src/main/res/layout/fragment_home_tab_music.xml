@@ -730,7 +730,7 @@
                 android:paddingBottom="8dp" />
         </LinearLayout>
 
-        <!--  Shuffle cards (shown right below "Recently added")  -->
+        <!--  Quick tiles (shuffle & shortcuts), shown right below "Recently added"  -->
         <LinearLayout
             android:id="@+id/home_shuffle_sector"
             android:layout_width="match_parent"
@@ -740,93 +740,141 @@
             android:paddingTop="4dp"
             android:paddingBottom="12dp">
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/home_shuffle_all_card"
-                style="?attr/materialCardViewFilledStyle"
+            <LinearLayout
+                android:id="@+id/home_tile_shuffle"
                 android:layout_width="0dp"
-                android:layout_height="96dp"
-                android:layout_marginEnd="6dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_glass_tile"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardBackgroundColor="?attr/colorPrimaryContainer"
-                app:cardCornerRadius="20dp">
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="12dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical"
-                    android:padding="14dp">
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_tile_icon_shuffle"
+                    android:importantForAccessibility="no"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_shuffle"
+                    app:tint="#FFFFFF" />
 
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/ic_shuffle"
-                        app:tint="?attr/colorOnPrimaryContainer" />
+                <TextView
+                    style="@style/LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/home_tile_shuffle"
+                    android:textColor="@color/titleTextColor" />
+            </LinearLayout>
 
-                    <TextView
-                        style="@style/LabelMedium"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/home_quick_shuffle_library"
-                        android:textColor="?attr/colorOnPrimaryContainer" />
-
-                    <TextView
-                        style="@style/LabelSmall"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:alpha="0.8"
-                        android:text="@string/home_quick_shuffle_library_subtitle"
-                        android:textColor="?attr/colorOnPrimaryContainer" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/home_shuffle_starred_card"
-                style="?attr/materialCardViewFilledStyle"
+            <LinearLayout
+                android:id="@+id/home_tile_starred"
                 android:layout_width="0dp"
-                android:layout_height="96dp"
-                android:layout_marginStart="6dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_glass_tile"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardBackgroundColor="?attr/colorTertiaryContainer"
-                app:cardCornerRadius="20dp">
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="12dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="vertical"
-                    android:padding="14dp">
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_tile_icon_favorite"
+                    android:importantForAccessibility="no"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_favorite"
+                    app:tint="#FFFFFF" />
 
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/ic_favorite"
-                        app:tint="?attr/colorOnTertiaryContainer" />
+                <TextView
+                    style="@style/LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/home_tile_starred"
+                    android:textColor="@color/titleTextColor" />
+            </LinearLayout>
 
-                    <TextView
-                        style="@style/LabelMedium"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/home_quick_shuffle_starred"
-                        android:textColor="?attr/colorOnTertiaryContainer" />
+            <LinearLayout
+                android:id="@+id/home_tile_recent"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_glass_tile"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="12dp">
 
-                    <TextView
-                        style="@style/LabelSmall"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:alpha="0.8"
-                        android:text="@string/home_quick_shuffle_starred_subtitle"
-                        android:textColor="?attr/colorOnTertiaryContainer" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_tile_icon_recent"
+                    android:importantForAccessibility="no"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_history"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    style="@style/LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/home_tile_recent"
+                    android:textColor="@color/titleTextColor" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/home_tile_most_played"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                
+                android:background="@drawable/bg_glass_tile"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="12dp">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_tile_icon_most"
+                    android:importantForAccessibility="no"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_graphic_eq"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    style="@style/LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/home_tile_most_played"
+                    android:textColor="@color/titleTextColor" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Playlists -->

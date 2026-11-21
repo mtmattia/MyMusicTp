@@ -59,6 +59,7 @@ import com.cappielloantonio.tempo.ui.adapter.YearAdapter;
 import com.cappielloantonio.tempo.ui.dialog.HomeRearrangementDialog;
 import com.cappielloantonio.tempo.ui.dialog.PlaylistEditorDialog;
 import com.cappielloantonio.tempo.util.Constants;
+import com.cappielloantonio.tempo.util.CoverPaletteUtil;
 import com.cappielloantonio.tempo.util.DownloadUtil;
 import com.cappielloantonio.tempo.util.MappingUtil;
 import com.cappielloantonio.tempo.util.MusicUtil;
@@ -113,6 +114,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
             // Give the server a moment to register the scrobble, then reload.
             refreshHandler.removeCallbacks(listeningRefresh);
             refreshHandler.postDelayed(listeningRefresh, 3000);
+            tintBackground(mediaItem);
         }
     };
 
@@ -304,8 +306,24 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
             }, 1200);
         });
 
-        bind.homeShuffleAllCard.setOnClickListener(v -> playShuffled(homeViewModel.getRandomShuffleSample()));
-        bind.homeShuffleStarredCard.setOnClickListener(v -> playShuffled(homeViewModel.getStarredShuffleSample()));
+        bind.homeTileShuffle.setOnClickListener(v -> playShuffled(homeViewModel.getRandomShuffleSample()));
+        bind.homeTileStarred.setOnClickListener(v -> playShuffled(homeViewModel.getStarredShuffleSample()));
+        bind.homeTileRecent.setOnClickListener(v -> openAlbumList(Constants.ALBUM_RECENTLY_PLAYED));
+        bind.homeTileMostPlayed.setOnClickListener(v -> openAlbumList(Constants.ALBUM_MOST_PLAYED));
+    }
+
+    private void openAlbumList(String key) {
+        Bundle bundle = new Bundle();
+        bundle.putString(key, key);
+        activity.navController.navigate(R.id.action_homeFragment_to_albumListPageFragment, bundle);
+    }
+
+    /** Tints the home background with the colors of the cover currently playing. */
+    private void tintBackground(@Nullable MediaItem mediaItem) {
+        if (bind == null || getView() == null) return;
+        String coverArtId = mediaItem != null && mediaItem.mediaMetadata.extras != null
+                ? mediaItem.mediaMetadata.extras.getString("coverArtId") : null;
+        CoverPaletteUtil.applyGradient(this, coverArtId, bind.homeSwipeRefresh, null);
     }
 
     private void playShuffled(LiveData<List<Child>> source) {
@@ -944,6 +962,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
                 if (future != mediaBrowserListenableFuture) return;
                 connectedMediaBrowser = future.get();
                 connectedMediaBrowser.addListener(homePlayerListener);
+                tintBackground(connectedMediaBrowser.getCurrentMediaItem());
             } catch (Exception ignored) {
             }
         }, MoreExecutors.directExecutor());
