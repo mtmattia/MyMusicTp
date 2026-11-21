@@ -331,6 +331,19 @@ public class MediaManager {
         }
     }
 
+    /**
+     * Last.fm-style rule: a skipped track counts as played once at least half
+     * of it (or 4 minutes) has been listened to.
+     */
+    public static boolean isPlayedEnough(MediaItem mediaItem, long positionMs) {
+        if (mediaItem == null || mediaItem.mediaMetadata.extras == null) return false;
+
+        long durationMs = mediaItem.mediaMetadata.extras.getInt("duration") * 1000L;
+        long threshold = durationMs > 0 ? Math.min(durationMs / 2, 240_000L) : 30_000L;
+
+        return positionMs >= threshold;
+    }
+
     public static void saveChronology(MediaItem mediaItem) {
         if (mediaItem != null) {
             getChronologyRepository().insert(new Chronology(mediaItem));

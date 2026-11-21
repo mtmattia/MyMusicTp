@@ -9,12 +9,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.Player;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.session.MediaBrowser;
@@ -61,6 +65,7 @@ import com.cappielloantonio.tempo.util.UIUtil;
 import com.cappielloantonio.tempo.viewmodel.HomeViewModel;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -91,6 +96,23 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     private ShareHorizontalAdapter shareHorizontalAdapter;
 
     private ListenableFuture<MediaBrowser> mediaBrowserListenableFuture;
+
+    private final Handler refreshHandler = new Handler();
+    private boolean hasResumedOnce = false;
+    private MediaBrowser connectedMediaBrowser;
+    private final Runnable listeningRefresh = () -> {
+        if (getView() != null && bind != null) {
+            homeViewModel.refreshListeningSectors(getViewLifecycleOwner());
+        }
+    };
+    private final Player.Listener homePlayerListener = new Player.Listener() {
+        @Override
+        public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
+            // Give the server a moment to register the scrobble, then reload.
+            refreshHandler.removeCallbacks(listeningRefresh);
+            refreshHandler.postDelayed(listeningRefresh, 3000);
+        }
+    };
 
     @Nullable
     @Override
@@ -142,6 +164,13 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     public void onResume() {
         super.onResume();
         refreshSharesView();
+
+        // The view model outlives this fragment: reload what depends on recent
+        // listening every time the home is shown again, not only on first launch.
+        if (hasResumedOnce) {
+            homeViewModel.refreshListeningSectors(getViewLifecycleOwner());
+        }
+        hasResumedOnce = true;
     }
 
     @Override
@@ -153,10 +182,13 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        refreshHandler.removeCallbacksAndMessages(null);
         bind = null;
     }
 
     private void init() {
+        initQuickActions();
+
         bind.discoveryTextViewRefreshable.setOnLongClickListener(v -> {
             homeViewModel.refreshDiscoverySongSample(getViewLifecycleOwner());
             return true;
@@ -260,6 +292,54 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
         });
 
         bind.gridTracksPreTextView.setOnClickListener(view -> showPopupMenu(view, R.menu.filter_top_songs_popup_menu));
+    }
+
+    private void initQuickActions() {
+        bind.homeSwipeRefresh.setOnRefreshListener(() -> {
+            homeViewModel.refreshAll(getViewLifecycleOwner());
+            refreshHandler.postDelayed(() -> {
+                if (bind != null) bind.homeSwipeRefresh.setRefreshing(false);
+            }, 1200);
+        });
+
+        bind.homeShuffleAllButton.setOnClickListener(v -> playShuffled(homeViewModel.getRandomShuffleSample()));
+        bind.homeChipShuffleStarred.setOnClickListener(v -> playShuffled(homeViewModel.getStarredShuffleSample()));
+        bind.homeChipRecentlyPlayed.setOnClickListener(v -> openAlbumList(Constants.ALBUM_RECENTLY_PLAYED));
+        bind.homeChipMostPlayed.setOnClickListener(v -> openAlbumList(Constants.ALBUM_MOST_PLAYED));
+        bind.homeChipRecentlyAdded.setOnClickListener(v -> openAlbumList(Constants.ALBUM_RECENTLY_ADDED));
+        bind.homeChipCustomize.setOnClickListener(v -> {
+            HomeRearrangementDialog dialog = new HomeRearrangementDialog();
+            dialog.show(requireActivity().getSupportFragmentManager(), null);
+        });
+    }
+
+    private void playShuffled(LiveData<List<Child>> source) {
+        source.observe(getViewLifecycleOwner(), new Observer<List<Child>>() {
+            @Override
+            public void onChanged(List<Child> songs) {
+                // Starred songs emit an empty placeholder before the real response.
+                if (songs == null || songs.isEmpty()) return;
+                source.removeObserver(this);
+
+                List<Child> queue = new ArrayList<>(songs);
+                MusicUtil.ratingFilter(queue);
+
+                if (queue.isEmpty()) {
+                    Toast.makeText(requireContext(), R.string.home_quick_nothing_to_play, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                java.util.Collections.shuffle(queue);
+                MediaManager.startQueue(mediaBrowserListenableFuture, queue, 0);
+                activity.setBottomSheetInPeek(true);
+            }
+        });
+    }
+
+    private void openAlbumList(String key) {
+        Bundle bundle = new Bundle();
+        bundle.putString(key, key);
+        activity.navController.navigate(R.id.action_homeFragment_to_albumListPageFragment, bundle);
     }
 
     private void initSyncStarredView() {
@@ -731,11 +811,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     }
 
     private void initHomeReorganizer() {
-        final Handler handler = new Handler();
-        final Runnable runnable = () -> {
-            if (bind != null) bind.homeSectorRearrangementButton.setVisibility(View.VISIBLE);
-        };
-        handler.postDelayed(runnable, 5000);
+        bind.homeSectorRearrangementButton.setVisibility(View.VISIBLE);
 
         bind.homeSectorRearrangementButton.setOnClickListener(v -> {
             HomeRearrangementDialog dialog = new HomeRearrangementDialog();
@@ -866,9 +942,24 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
 
     private void initializeMediaBrowser() {
         mediaBrowserListenableFuture = new MediaBrowser.Builder(requireContext(), new SessionToken(requireContext(), new ComponentName(requireContext(), MediaService.class))).buildAsync();
+
+        final ListenableFuture<MediaBrowser> future = mediaBrowserListenableFuture;
+        future.addListener(() -> {
+            try {
+                if (future != mediaBrowserListenableFuture) return;
+                connectedMediaBrowser = future.get();
+                connectedMediaBrowser.addListener(homePlayerListener);
+            } catch (Exception ignored) {
+            }
+        }, MoreExecutors.directExecutor());
     }
 
     private void releaseMediaBrowser() {
+        if (connectedMediaBrowser != null) {
+            connectedMediaBrowser.removeListener(homePlayerListener);
+            connectedMediaBrowser = null;
+        }
+        refreshHandler.removeCallbacks(listeningRefresh);
         MediaBrowser.releaseFuture(mediaBrowserListenableFuture);
     }
 

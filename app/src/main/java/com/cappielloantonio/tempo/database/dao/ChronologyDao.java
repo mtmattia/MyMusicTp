@@ -12,10 +12,10 @@ import java.util.List;
 
 @Dao
 public interface ChronologyDao {
-    @Query("SELECT * FROM chronology WHERE server == :server GROUP BY id ORDER BY timestamp DESC LIMIT :count")
+    @Query("SELECT * FROM chronology WHERE server == :server GROUP BY id ORDER BY MAX(timestamp) DESC LIMIT :count")
     LiveData<List<Chronology>> getLastPlayed(String server, int count);
 
-    @Query("SELECT * FROM chronology WHERE timestamp >= :endDate AND timestamp < :startDate AND server == :server GROUP BY id ORDER BY COUNT(id) DESC LIMIT 20")
+    @Query("SELECT * FROM chronology WHERE timestamp >= :endDate AND timestamp < :startDate AND server == :server GROUP BY id ORDER BY COUNT(id) DESC, MAX(timestamp) DESC LIMIT 20")
     LiveData<List<Chronology>> getAllFrom(long startDate, long endDate, String server);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

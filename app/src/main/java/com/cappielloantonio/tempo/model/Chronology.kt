@@ -7,13 +7,20 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.cappielloantonio.tempo.subsonic.models.Child
 import com.cappielloantonio.tempo.util.Preferences
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import java.util.*
 
 @Keep
 @Parcelize
 @Entity(tableName = "chronology")
-class Chronology(@PrimaryKey override val id: String) : Child(id) {
+class Chronology(override val id: String) : Child(id) {
+    // One row per play (the song id is no longer the key), so plays can be counted.
+    @IgnoredOnParcel
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "uid")
+    var uid: Long = 0
+
     @ColumnInfo(name = "timestamp")
     var timestamp: Long = System.currentTimeMillis()
 
