@@ -24,10 +24,6 @@
             android:orientation="vertical"
             android:paddingBottom="@dimen/global_padding_bottom">
 
-            <!--  Barra di ricerca  -->
-            <include
-                android:id="@+id/library_search_bar"
-                layout="@layout/view_search_bar" />
 
             <!--  Album  -->
             <LinearLayout

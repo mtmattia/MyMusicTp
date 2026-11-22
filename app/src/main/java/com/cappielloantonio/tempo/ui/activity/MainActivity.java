@@ -270,7 +270,40 @@ public class MainActivity extends BaseActivity {
             }
         });
 
-        NavigationUI.setupWithNavController(bottomNavigationView, navController);
+        // Home, Libreria e Download sono pagine affiancate (MainPagerFragment): la barra in basso
+        // le fa scorrere invece di cambiare destinazione
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            if (selectingFromPager) return true;
+            int id = item.getItemId();
+            if (Objects.requireNonNull(navController.getCurrentDestination()).getId() != R.id.homeFragment) {
+                com.cappielloantonio.tempo.ui.fragment.MainPagerFragment.setLastPageFor(id);
+                if (!navController.popBackStack(R.id.homeFragment, false)) navController.navigate(R.id.homeFragment);
+            } else if (mainPager != null) {
+                mainPager.showPage(id);
+            }
+            return true;
+        });
+        bottomNavigationView.setOnItemReselectedListener(item -> {
+            if (Objects.requireNonNull(navController.getCurrentDestination()).getId() != R.id.homeFragment) {
+                com.cappielloantonio.tempo.ui.fragment.MainPagerFragment.setLastPageFor(item.getItemId());
+                navController.popBackStack(R.id.homeFragment, false);
+            }
+        });
+    }
+
+    private com.cappielloantonio.tempo.ui.fragment.MainPagerFragment mainPager;
+    private boolean selectingFromPager = false;
+
+    public void setMainPager(com.cappielloantonio.tempo.ui.fragment.MainPagerFragment pager) {
+        mainPager = pager;
+    }
+
+    /** La pagina è cambiata col dito: aggiorna la voce evidenziata in basso. */
+    public void setBottomNavigationSelected(int menuId) {
+        if (bottomNavigationView.getSelectedItemId() == menuId) return;
+        selectingFromPager = true;
+        bottomNavigationView.setSelectedItemId(menuId);
+        selectingFromPager = false;
     }
 
     public void setBottomNavigationBarVisibility(boolean visibility) {

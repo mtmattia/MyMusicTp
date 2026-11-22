@@ -77,7 +77,8 @@ public class HomeFragment extends Fragment {
 
         // Ricerca in alto, nella stessa posizione della Libreria, sopra Musica / Podcast / Radio
         View searchBar = getLayoutInflater().inflate(R.layout.view_search_bar, appBarLayout, false);
-        searchBar.setOnClickListener(v -> activity.navController.navigate(R.id.searchFragment));
+        // Spazio per la ricerca: la barra vera sta sopra le pagine (MainPagerFragment) e resta ferma
+        searchBar.setVisibility(View.INVISIBLE);
         appBarLayout.addView(searchBar);
 
         appBarLayout.addView(tabLayout);

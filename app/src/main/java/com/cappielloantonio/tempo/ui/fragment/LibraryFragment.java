@@ -97,15 +97,14 @@ public class LibraryFragment extends Fragment implements ClickCallback {
     }
 
     private void init() {
-        bind.librarySearchBar.getRoot().setOnClickListener(v -> activity.navController.navigate(R.id.action_libraryFragment_to_searchFragment));
         initYearsView();
-        bind.albumCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.action_libraryFragment_to_albumCatalogueFragment));
-        bind.artistCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.action_libraryFragment_to_artistCatalogueFragment));
-        bind.genreCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.action_libraryFragment_to_genreCatalogueFragment));
+        bind.albumCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.albumCatalogueFragment));
+        bind.artistCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.artistCatalogueFragment));
+        bind.genreCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.genreCatalogueFragment));
         bind.playlistCatalogueTextViewClickable.setOnClickListener(v -> {
             Bundle bundle = new Bundle();
             bundle.putString(Constants.PLAYLIST_ALL, Constants.PLAYLIST_ALL);
-            activity.navController.navigate(R.id.action_libraryFragment_to_playlistCatalogueFragment, bundle);
+            activity.navController.navigate(R.id.playlistCatalogueFragment, bundle);
         });
 
         bind.albumCatalogueSampleTextViewRefreshable.setOnLongClickListener(view -> {
@@ -148,6 +147,12 @@ public class LibraryFragment extends Fragment implements ClickCallback {
         materialToolbar = bind.getRoot().findViewById(R.id.toolbar);
 
         activity.setSupportActionBar(materialToolbar);
+
+        // Spazio per la ricerca, che sta sopra le pagine e resta ferma tra Home e Libreria
+        android.view.ViewGroup appBar = bind.getRoot().findViewById(R.id.toolbar_fragment);
+        View spacer = getLayoutInflater().inflate(R.layout.view_search_bar, appBar, false);
+        spacer.setVisibility(View.INVISIBLE);
+        appBar.addView(spacer);
         Objects.requireNonNull(materialToolbar.getOverflowIcon()).setTint(requireContext().getResources().getColor(R.color.titleTextColor, null));
     }
 

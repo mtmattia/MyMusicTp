@@ -33,7 +33,7 @@
     </fragment>
     <fragment
         android:id="@+id/homeFragment"
-        android:name="com.cappielloantonio.tempo.ui.fragment.HomeFragment"
+        android:name="com.cappielloantonio.tempo.ui.fragment.MainPagerFragment"
         android:label="HomeFragment"
         tools:layout="@layout/fragment_home">
         <action
