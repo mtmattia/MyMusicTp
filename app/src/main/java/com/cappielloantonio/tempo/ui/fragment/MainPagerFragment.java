@@ -96,6 +96,24 @@ public class MainPagerFragment extends Fragment {
                 placeSearchBar(position, offset);
             }
 
+            private int lastSettledPage = -1;
+            private int direction = 0;
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                if (bind == null) return;
+                if (state == ViewPager2.SCROLL_STATE_IDLE) {
+                    int current = bind.mainPager.getCurrentItem();
+                    if (lastSettledPage >= 0 && current != lastSettledPage) {
+                        direction = current > lastSettledPage ? 1 : -1;
+                        bounce(direction);
+                    }
+                    lastSettledPage = current;
+                } else if (lastSettledPage < 0) {
+                    lastSettledPage = bind.mainPager.getCurrentItem();
+                }
+            }
+
             @Override
             public void onPageSelected(int position) {
                 lastPage = position;
@@ -107,6 +125,21 @@ public class MainPagerFragment extends Fragment {
 
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), backToHome);
         activity.setMainPager(this);
+    }
+
+    /**
+     * Piccolo rimbalzo quando la pagina si ferma, come se sbattesse sul bordo del display:
+     * va un filo oltre nella direzione dello scorrimento e torna in posizione.
+     */
+    private void bounce(int direction) {
+        if (bind == null) return;
+        View pages = bind.mainPager.getChildAt(0);
+        float px = 14 * getResources().getDisplayMetrics().density;
+        android.animation.ObjectAnimator anim = android.animation.ObjectAnimator.ofFloat(
+                pages, View.TRANSLATION_X, 0f, -direction * px, direction * px * 0.25f, 0f);
+        anim.setDuration(320);
+        anim.setInterpolator(new android.view.animation.DecelerateInterpolator());
+        anim.start();
     }
 
     /** Ricerca ferma tra Home e Libreria, scorre via verso Download. */
