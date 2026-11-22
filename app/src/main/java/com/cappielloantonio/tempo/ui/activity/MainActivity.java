@@ -101,6 +101,7 @@ public class MainActivity extends BaseActivity {
     protected void onDestroy() {
         super.onDestroy();
         connectivityStatusReceiverManager(false);
+        pingRetryHandler.removeCallbacksAndMessages(null);
         bind = null;
     }
 
@@ -340,6 +341,7 @@ public class MainActivity extends BaseActivity {
         Preferences.setPassword(null);
         Preferences.setServer(null);
         Preferences.setLocalAddress(null);
+        Preferences.resetInUseServerAddress();
         Preferences.setUser(null);
 
         // TODO Enter all settings to be reset
@@ -390,6 +392,10 @@ public class MainActivity extends BaseActivity {
     }
 
     private boolean pingInProgress = false;
+    private final Handler pingRetryHandler = new Handler(Looper.getMainLooper());
+    // Delay before each round. The first ping after reopening the app often fails because
+    // Android is still restoring network access to an app that was idle in background.
+    private static final long[] PING_RETRY_DELAYS_MS = {0, 2000, 5000};
 
     private void pingServer() {
         if (Preferences.getToken() == null) return;
@@ -397,41 +403,66 @@ public class MainActivity extends BaseActivity {
         // Overlapping pings (onResume + connectivity change) used to switch the
         // local/remote address twice, ending up back on the unreachable one.
         if (pingInProgress) return;
+        pingInProgress = true;
 
-        if (Preferences.isInUseServerAddressLocal()) {
-            pingInProgress = true;
-            mainViewModel.ping().observe(this, subsonicResponse -> {
-                pingInProgress = false;
-                if (subsonicResponse == null) {
-                    Preferences.setServerSwitchableTimer();
-                    Preferences.switchInUseServerAddress();
-                    App.refreshSubsonicClient();
-                    pingServer();
-                } else {
-                    Preferences.setOpenSubsonic(subsonicResponse.getOpenSubsonic() != null && subsonicResponse.getOpenSubsonic());
-                }
-            });
-        } else {
-            if (Preferences.isServerSwitchable()) {
-                Preferences.setServerSwitchableTimer();
-                Preferences.switchInUseServerAddress();
-                App.refreshSubsonicClient();
-                pingServer();
-            } else {
-                pingInProgress = true;
-                mainViewModel.ping().observe(this, subsonicResponse -> {
-                    pingInProgress = false;
-                    if (subsonicResponse == null) {
-                        if (Preferences.showServerUnreachableDialog()) {
-                            ServerUnreachableDialog dialog = new ServerUnreachableDialog();
-                            dialog.show(getSupportFragmentManager(), null);
-                        }
-                    } else {
-                        Preferences.setOpenSubsonic(subsonicResponse.getOpenSubsonic() != null && subsonicResponse.getOpenSubsonic());
-                    }
-                });
-            }
+        // Prefer the local address when one is configured (at home it is the fast path).
+        if (!Preferences.isInUseServerAddressLocal() && Preferences.isServerSwitchable()) {
+            switchServerAddress();
         }
+
+        attemptPing(0, false);
+    }
+
+    /**
+     * Pings the address in use; on failure tries the other address (local/remote) right away,
+     * then retries the whole round with a delay. Only when every round fails the
+     * "server unreachable" dialog is shown. Before, a failed remote ping never fell back to
+     * the local address (15s switch timer), so the app stayed stuck on an unreachable
+     * address until the server was edited or re-added.
+     */
+    private void attemptPing(int round, boolean alternativeTried) {
+        if (isFinishing() || isDestroyed()) {
+            pingInProgress = false;
+            return;
+        }
+
+        mainViewModel.ping().observe(this, subsonicResponse -> {
+            if (subsonicResponse != null) {
+                pingInProgress = false;
+                Preferences.setOpenSubsonic(subsonicResponse.getOpenSubsonic() != null && subsonicResponse.getOpenSubsonic());
+                return;
+            }
+
+            if (!alternativeTried && hasAlternativeServerAddress()) {
+                switchServerAddress();
+                attemptPing(round, true);
+                return;
+            }
+
+            if (round + 1 < PING_RETRY_DELAYS_MS.length) {
+                RetrofitClient.evictConnections();
+                pingRetryHandler.postDelayed(() -> attemptPing(round + 1, false), PING_RETRY_DELAYS_MS[round + 1]);
+                return;
+            }
+
+            pingInProgress = false;
+            if (Preferences.showServerUnreachableDialog() && !getSupportFragmentManager().isStateSaved()) {
+                ServerUnreachableDialog dialog = new ServerUnreachableDialog();
+                dialog.show(getSupportFragmentManager(), null);
+            }
+        });
+    }
+
+    private boolean hasAlternativeServerAddress() {
+        String server = Preferences.getServer();
+        String local = Preferences.getLocalAddress();
+        return server != null && !server.isEmpty() && local != null && !local.isEmpty() && !server.equals(local);
+    }
+
+    private void switchServerAddress() {
+        Preferences.setServerSwitchableTimer();
+        Preferences.switchInUseServerAddress();
+        App.refreshSubsonicClient();
     }
 
     private void getOpenSubsonicExtensions() {
