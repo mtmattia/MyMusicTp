@@ -10,6 +10,8 @@ import androidx.media3.session.LibraryResult
 import com.cappielloantonio.tempo.App
 import com.cappielloantonio.tempo.R
 import com.cappielloantonio.tempo.repository.AutomotiveRepository
+import com.cappielloantonio.tempo.service.auto.AutoTileArtwork
+import java.util.concurrent.Executors
 import com.cappielloantonio.tempo.util.Preferences.getServerId
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
@@ -400,7 +402,12 @@ object MediaBrowserTree {
         }, MoreExecutors.directExecutor())
     }
 
-    /** Riquadro della sezione con la copertina del primo elemento; null se la sezione è vuota. */
+    private val tileExecutor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(3))
+
+    /**
+     * Riquadro della sezione nello stile "Scoperta": copertina del primo elemento, sfumatura
+     * e nome della sezione scritto sopra. null se la sezione è vuota.
+     */
     private fun tile(
         id: String,
         content: ListenableFuture<LibraryResult<ImmutableList<MediaItem>>>
@@ -408,10 +415,12 @@ object MediaBrowserTree {
         val node = treeNodes[id]!!.item
         val withArt = Futures.transform(content, { result ->
             if (result?.value.isNullOrEmpty()) return@transform null
-            val art = result?.value?.firstOrNull { it.mediaMetadata.artworkUri != null }?.mediaMetadata?.artworkUri
+            val cover = result?.value?.firstOrNull { it.mediaMetadata.artworkUri != null }?.mediaMetadata?.artworkUri
+            val title = node.mediaMetadata.title?.toString() ?: ""
+            val art = AutoTileArtwork.render(App.getContext(), id, title, cover) ?: cover
             if (art == null) node
             else node.buildUpon().setMediaMetadata(node.mediaMetadata.buildUpon().setArtworkUri(art).build()).build()
-        }, MoreExecutors.directExecutor())
+        }, tileExecutor)
         // Sezione vuota o in errore (es. nessun preferito): niente riquadro col triangolo di avviso
         return Futures.catching(withArt, Throwable::class.java, { null }, MoreExecutors.directExecutor())
     }
