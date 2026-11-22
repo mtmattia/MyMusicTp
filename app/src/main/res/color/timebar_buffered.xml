@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Buffered part of the seek bar: a bit brighter than the unplayed track. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:alpha="0.35" android:color="?attr/colorOnPrimaryContainer" />
+</selector>
