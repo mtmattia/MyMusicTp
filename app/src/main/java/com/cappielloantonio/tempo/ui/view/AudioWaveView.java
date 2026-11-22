@@ -138,13 +138,12 @@ public class AudioWaveView extends View {
         for (int i = 0; i <= head; i++) {
             float v = Math.max(0.08f, Math.min(1f, history[i]));
             float fromHead = headF - i - 0.5f; // continuous distance from the playhead
-            if (fromHead < TAIL) {
-                // Wave tail: the latest bars breathe with the live level
-                float d = Math.max(0f, fromHead);
-                float weight = 1f - d / TAIL;
-                float wave = (float) Math.sin(phase - d * 0.9f);
-                v = Math.min(1f, v * (1f + 0.45f * wave * live * weight) + live * 0.25f * weight);
-            }
+            // A wave travels along every played bar, driven by the live level;
+            // the bars right behind the playhead also swell a bit more.
+            float d = Math.max(0f, fromHead);
+            float wave = (float) Math.sin(phase - d * 0.55f);
+            float near = Math.max(0f, 1f - d / TAIL);
+            v = Math.max(0.06f, Math.min(1f, v * (1f + 0.4f * wave * (0.25f + live)) + live * 0.25f * near));
             float bh = minH + (maxH - minH) * v;
             float alphaScale = 1f;
             if (i == head) {
