@@ -386,15 +386,15 @@ object MediaBrowserTree {
      */
     private fun homeSections(): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
         val tiles = listOf(
-            tile(DISCOVERY_ID, automotiveRepository.getRandomSongs(1)),
             tile(LAST_PLAYED_ID, automotiveRepository.getAlbums(LAST_PLAYED_ID, "recent", 1)),
-            tile(MADE_FOR_YOU_ID, automotiveRepository.getMadeForYouSeeds(MADE_FOR_YOU_ID, 1)),
             tile(RECENTLY_ADDED_ID, automotiveRepository.getAlbums(RECENTLY_ADDED_ID, "newest", 1)),
+            tile(MADE_FOR_YOU_ID, automotiveRepository.getMadeForYouSeeds(MADE_FOR_YOU_ID, 1)),
             tile(MOST_PLAYED_ID, automotiveRepository.getAlbums(MOST_PLAYED_ID, "frequent", 1)),
+            tile(DISCOVERY_ID, automotiveRepository.getRandomSongs(1)),
+            tile(RECENT_SONGS_ID, automotiveRepository.getRecentlyPlayedSongs(getServerId(), 1)),
             tile(STARRED_TRACKS_ID, automotiveRepository.starredSongs),
             tile(STARRED_ALBUMS_ID, automotiveRepository.getStarredAlbums(STARRED_ALBUMS_ID)),
-            tile(STARRED_ARTISTS_ID, automotiveRepository.getStarredArtists(STARRED_ARTISTS_ID)),
-            tile(RECENT_SONGS_ID, automotiveRepository.getRecentlyPlayedSongs(getServerId(), 1)),
+            tile(STARRED_ARTISTS_ID, automotiveRepository.getStarredArtists(STARRED_ARTISTS_ID))
         )
 
         return Futures.transform(Futures.allAsList(tiles), { items ->
