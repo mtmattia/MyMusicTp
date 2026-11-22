@@ -25,11 +25,6 @@ object MediaBrowserTree {
     const val CONTENT_STYLE_PLAYABLE_HINT = "android.media.browse.CONTENT_STYLE_PLAYABLE_HINT"
     const val CONTENT_STYLE_LIST = 1
     const val CONTENT_STYLE_GRID = 2
-    const val CONTENT_STYLE_GROUP_TITLE = "android.media.browse.CONTENT_STYLE_GROUP_TITLE"
-    const val CONTENT_STYLE_SINGLE_ITEM = "android.media.browse.CONTENT_STYLE_SINGLE_ITEM_HINT"
-
-    private const val HOME_SECTION_SIZE = 10
-
     private fun t(res: Int): String = App.getContext().getString(res)
 
     private lateinit var automotiveRepository: AutomotiveRepository
@@ -198,7 +193,8 @@ object MediaBrowserTree {
                     mediaId = MOST_PLAYED_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
@@ -209,7 +205,8 @@ object MediaBrowserTree {
                     mediaId = LAST_PLAYED_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
@@ -220,7 +217,8 @@ object MediaBrowserTree {
                     mediaId = RECENTLY_ADDED_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
@@ -242,7 +240,8 @@ object MediaBrowserTree {
                     mediaId = MADE_FOR_YOU_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
@@ -264,7 +263,8 @@ object MediaBrowserTree {
                     mediaId = STARRED_ALBUMS_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
@@ -275,7 +275,8 @@ object MediaBrowserTree {
                     mediaId = STARRED_ARTISTS_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
@@ -361,46 +362,40 @@ object MediaBrowserTree {
     }
 
     /**
-     * Home di Android Auto come le app di musica standard: copertine grandi divise per
-     * sezioni (titoli di gruppo), poi le altre raccolte in lista.
+     * Home di Android Auto: riquadri grandi, uno per sezione, con la copertina del
+     * primo elemento (come le app di musica standard). Toccando un riquadro si apre
+     * la sezione, anche lei a copertine.
      */
     private fun homeSections(): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
-        val sections = listOf(
-            section(automotiveRepository.getAlbums(LAST_PLAYED_ID, "recent", HOME_SECTION_SIZE), t(R.string.home_title_last_played)),
-            section(automotiveRepository.getMadeForYouSeeds(MADE_FOR_YOU_ID, 8), t(R.string.home_title_made_for_you)),
-            section(automotiveRepository.getAlbums(RECENTLY_ADDED_ID, "newest", HOME_SECTION_SIZE), t(R.string.home_title_recently_added)),
-            section(automotiveRepository.getAlbums(MOST_PLAYED_ID, "frequent", HOME_SECTION_SIZE), t(R.string.home_title_most_played))
+        val tiles = listOf(
+            tile(LAST_PLAYED_ID, automotiveRepository.getAlbums(LAST_PLAYED_ID, "recent", 1)),
+            tile(MADE_FOR_YOU_ID, automotiveRepository.getMadeForYouSeeds(MADE_FOR_YOU_ID, 1)),
+            tile(RECENTLY_ADDED_ID, automotiveRepository.getAlbums(RECENTLY_ADDED_ID, "newest", 1)),
+            tile(MOST_PLAYED_ID, automotiveRepository.getAlbums(MOST_PLAYED_ID, "frequent", 1)),
+            tile(STARRED_TRACKS_ID, automotiveRepository.starredSongs),
+            tile(STARRED_ALBUMS_ID, automotiveRepository.getStarredAlbums(STARRED_ALBUMS_ID)),
+            tile(STARRED_ARTISTS_ID, automotiveRepository.getStarredArtists(STARRED_ARTISTS_ID)),
+            tile(RECENT_SONGS_ID, automotiveRepository.getRecentlyPlayedSongs(getServerId(), 1)),
+            tile(RANDOM_ID, automotiveRepository.getRandomSongs(1))
         )
 
-        val browse = listOf(STARRED_TRACKS_ID, STARRED_ALBUMS_ID, STARRED_ARTISTS_ID, RECENT_SONGS_ID, RANDOM_ID)
-            .mapNotNull { treeNodes[it]?.item }
-            .map { decorate(it, t(R.string.auto_browse), listStyle = true) }
-
-        return Futures.transform(Futures.allAsList(sections), { lists ->
-            val items = lists.flatten() + browse
+        return Futures.transform(Futures.allAsList(tiles), { items ->
             LibraryResult.ofItemList(ImmutableList.copyOf(items), null)
         }, MoreExecutors.directExecutor())
     }
 
-    private fun section(
-        future: ListenableFuture<LibraryResult<ImmutableList<MediaItem>>>,
-        title: String
-    ): ListenableFuture<List<MediaItem>> {
-        val items = Futures.transform(future, { result ->
-            (result?.value ?: ImmutableList.of()).take(HOME_SECTION_SIZE).map { decorate(it, title) }
+    private fun tile(
+        id: String,
+        content: ListenableFuture<LibraryResult<ImmutableList<MediaItem>>>
+    ): ListenableFuture<MediaItem> {
+        val node = treeNodes[id]!!.item
+        val withArt = Futures.transform(content, { result ->
+            val art = result?.value?.firstOrNull { it.mediaMetadata.artworkUri != null }?.mediaMetadata?.artworkUri
+            if (art == null) node
+            else node.buildUpon().setMediaMetadata(node.mediaMetadata.buildUpon().setArtworkUri(art).build()).build()
         }, MoreExecutors.directExecutor())
-        // Una sezione che fallisce (es. server senza "più ascoltati") non deve svuotare la Home
-        return Futures.catching(items, Throwable::class.java, { emptyList() }, MoreExecutors.directExecutor())
-    }
-
-    private fun decorate(item: MediaItem, group: String, listStyle: Boolean = false): MediaItem {
-        val extras = Bundle(item.mediaMetadata.extras ?: Bundle()).apply {
-            putString(CONTENT_STYLE_GROUP_TITLE, group)
-            if (listStyle) putInt(CONTENT_STYLE_SINGLE_ITEM, CONTENT_STYLE_LIST)
-        }
-        return item.buildUpon()
-            .setMediaMetadata(item.mediaMetadata.buildUpon().setExtras(extras).build())
-            .build()
+        // Se una sezione non risponde il riquadro resta, senza copertina
+        return Futures.catching(withArt, Throwable::class.java, { node }, MoreExecutors.directExecutor())
     }
 
     fun getChildren(
