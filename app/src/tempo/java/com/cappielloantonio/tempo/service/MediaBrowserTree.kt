@@ -345,7 +345,7 @@ object MediaBrowserTree {
             LAST_PLAYED_ID -> automotiveRepository.getAlbums(id, "recent", 100)
             RECENTLY_ADDED_ID -> automotiveRepository.getAlbums(id, "newest", 100)
             RECENT_SONGS_ID -> automotiveRepository.getRecentlyPlayedSongs(getServerId(),100)
-            MADE_FOR_YOU_ID -> automotiveRepository.getStarredArtists(id)
+            MADE_FOR_YOU_ID -> automotiveRepository.getMadeForYouSeeds(id, 12)
             STARRED_TRACKS_ID -> automotiveRepository.starredSongs
             STARRED_ALBUMS_ID -> automotiveRepository.getStarredAlbums(id)
             STARRED_ARTISTS_ID -> automotiveRepository.getStarredArtists(id)
