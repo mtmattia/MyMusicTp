@@ -78,17 +78,37 @@
     <TextView
         android:id="@+id/player_media_title_label"
         style="@style/HeadlineLarge"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginTop="24dp"
-        android:layout_marginEnd="24dp"
         android:ellipsize="marquee"
         android:singleLine="true"
         android:text="@string/label_placeholder"
-        app:layout_constraintEnd_toStartOf="@+id/button_favorite"
+        app:layout_constraintEnd_toStartOf="@+id/player_media_codec_badge"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/guideline" />
+
+    <TextView
+        android:id="@+id/player_media_codec_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/bg_codec_badge"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="3dp"
+        android:textColor="?attr/colorOnSecondaryContainer"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="@+id/player_media_title_label"
+        app:layout_constraintBottom_toBottomOf="@+id/player_media_title_label"
+        app:layout_constraintEnd_toStartOf="@+id/button_favorite"
+        app:layout_constraintStart_toEndOf="@+id/player_media_title_label" />
 
     <TextView
         android:id="@+id/player_artist_name_label"
