@@ -217,7 +217,7 @@ public class LibraryFragment extends Fragment implements ClickCallback {
     }
 
     private void initGenreView() {
-        bind.genreRecyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 3, GridLayoutManager.HORIZONTAL, false));
+        bind.genreRecyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 2, GridLayoutManager.HORIZONTAL, false));
         bind.genreRecyclerView.setHasFixedSize(true);
 
         genreAdapter = new GenreAdapter(this);
