@@ -1,17 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Glass folder tile, matching the cover-tinted liquid glass style -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:name="vector"
-    android:width="24dp"
-    android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
     <path
-        android:name="path"
-        android:fillColor="?attr/colorSurfaceVariant"
-        android:pathData="M 0 0 L 24 0 L 24 24 L 0 24 Z"
-        android:strokeWidth="1" />
+        android:fillColor="?attr/colorPrimaryContainer"
+        android:pathData="M12,0 H36 A12,12 0 0 1 48,12 V36 A12,12 0 0 1 36,48 H12 A12,12 0 0 1 0,36 V12 A12,12 0 0 1 12,0 Z" />
     <path
-        android:name="path_1"
-        android:fillColor="?attr/colorOnSurfaceVariant"
-        android:pathData="M 10.834 7.335 L 7.335 7.335 C 6.694 7.335 6.175 7.86 6.175 8.502 L 6.169 15.498 C 6.169 16.14 6.694 16.665 7.335 16.665 L 16.665 16.665 C 17.306 16.665 17.831 16.14 17.831 15.498 L 17.831 9.668 C 17.831 9.026 17.306 8.502 16.665 8.502 L 12 8.502 Z"
-        android:strokeWidth="1" />
+        android:strokeColor="?attr/colorOnPrimaryContainer"
+        android:strokeAlpha="0.18"
+        android:strokeWidth="1"
+        android:pathData="M12,0.5 H36 A11.5,11.5 0 0 1 47.5,12 V36 A11.5,11.5 0 0 1 36,47.5 H12 A11.5,11.5 0 0 1 0.5,36 V12 A11.5,11.5 0 0 1 12,0.5 Z" />
+    <path
+        android:fillColor="?attr/colorOnPrimaryContainer"
+        android:fillAlpha="0.5"
+        android:pathData="M12,15 C12,13.9 12.9,13 14,13 H20.6 L23.4,15.8 H34 C35.1,15.8 36,16.7 36,17.8 V33 C36,34.1 35.1,35 34,35 H14 C12.9,35 12,34.1 12,33 Z" />
+    <path
+        android:fillColor="?attr/colorOnPrimaryContainer"
+        android:pathData="M12,20 C12,18.9 12.9,18 14,18 H34 C35.1,18 36,18.9 36,20 V33 C36,34.1 35.1,35 34,35 H14 C12.9,35 12,34.1 12,33 Z" />
+    <path
+        android:fillColor="?attr/colorPrimaryContainer"
+        android:pathData="M21.5,29.5 a2.5,2.5 0 1 0 5,0 a2.5,2.5 0 1 0 -5,0 Z" />
+    <path
+        android:fillColor="?attr/colorPrimaryContainer"
+        android:pathData="M25,21 h4.5 v2.2 h-3 v6.3 h-1.5 Z" />
 </vector>
