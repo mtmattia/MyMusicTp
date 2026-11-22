@@ -1,6 +1,7 @@
 package com.cappielloantonio.tempo.service
 
 import android.net.Uri
+import android.os.Bundle
 import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaItem.SubtitleConfiguration
@@ -11,9 +12,17 @@ import com.cappielloantonio.tempo.util.Preferences.getServerId
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.SettableFuture
 
 object MediaBrowserTree {
+
+    // Chiavi standard Android Auto per lo stile dei contenuti
+    const val CONTENT_STYLE_SUPPORTED = "android.media.browse.CONTENT_STYLE_SUPPORTED"
+    const val CONTENT_STYLE_BROWSABLE_HINT = "android.media.browse.CONTENT_STYLE_BROWSABLE_HINT"
+    const val CONTENT_STYLE_PLAYABLE_HINT = "android.media.browse.CONTENT_STYLE_PLAYABLE_HINT"
+    const val CONTENT_STYLE_LIST = 1
+    const val CONTENT_STYLE_GRID = 2
 
     private lateinit var automotiveRepository: AutomotiveRepository
 
@@ -81,10 +90,17 @@ object MediaBrowserTree {
         artist: String? = null,
         genre: String? = null,
         sourceUri: Uri? = null,
-        imageUri: Uri? = null
+        imageUri: Uri? = null,
+        childrenBrowsableStyle: Int? = null
     ): MediaItem {
+        // Android Auto: stile dei figli di questo nodo (lista o griglia)
+        val extras = childrenBrowsableStyle?.let {
+            Bundle().apply { putInt(CONTENT_STYLE_BROWSABLE_HINT, it) }
+        }
+
         val metadata =
             MediaMetadata.Builder()
+                .setExtras(extras)
                 .setAlbumTitle(album)
                 .setTitle(title)
                 .setArtist(artist)
@@ -132,7 +148,8 @@ object MediaBrowserTree {
                     mediaId = HOME_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                    childrenBrowsableStyle = CONTENT_STYLE_LIST
                 )
             )
 
@@ -143,7 +160,8 @@ object MediaBrowserTree {
                     mediaId = LIBRARY_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                    childrenBrowsableStyle = CONTENT_STYLE_LIST
                 )
             )
 
@@ -154,7 +172,8 @@ object MediaBrowserTree {
                     mediaId = OTHER_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                    childrenBrowsableStyle = CONTENT_STYLE_LIST
                 )
             )
 
@@ -282,7 +301,8 @@ object MediaBrowserTree {
                     mediaId = FOLDER_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                    childrenBrowsableStyle = CONTENT_STYLE_LIST
                 )
             )
 
@@ -488,6 +508,24 @@ object MediaBrowserTree {
         }
 
         return updatedMediaItems
+    }
+
+    /**
+     * Ricerca vocale ("Ok Google, metti X su Tempo" o microfono in Android Auto).
+     * Restituisce solo brani riproducibili; query vuota = brani casuali.
+     */
+    fun voiceSearch(query: String): ListenableFuture<List<MediaItem>> {
+        val future = if (query.isBlank()) {
+            automotiveRepository.getRandomSongs(100)
+        } else {
+            automotiveRepository.search(query, ALBUM_ID, ARTIST_ID)
+        }
+
+        return Futures.transform(future, { result ->
+            result?.value
+                ?.filter { it.mediaMetadata.isPlayable == true && it.localConfiguration != null }
+                ?: emptyList()
+        }, MoreExecutors.directExecutor())
     }
 
     fun search(query: String): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
