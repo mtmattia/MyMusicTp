@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Intestazione della sezione Download: titolo, Chromecast e Impostazioni -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingEnd="8dp">
+
+    <TextView
+        style="@style/HeadlineMedium"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/download_title_section" />
+
+    <!-- Qui il pulsante Chromecast, dove il flavor lo supporta -->
+    <FrameLayout
+        android:id="@+id/download_cast_container"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp" />
+
+    <ImageButton
+        android:id="@+id/download_settings_button"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/menu_settings_button"
+        android:src="@drawable/ic_settings"
+        app:tint="?attr/colorOnSurface" />
+</LinearLayout>

@@ -98,6 +98,14 @@ public class DownloadFragment extends Fragment implements ClickCallback {
 
         activity.setSupportActionBar(materialToolbar);
         Objects.requireNonNull(materialToolbar.getOverflowIcon()).setTint(requireContext().getResources().getColor(R.color.titleTextColor, null));
+
+        // La barra in alto è nascosta: qui restano il titolo, il Chromecast e le Impostazioni
+        android.view.ViewGroup appBar = bind.getRoot().findViewById(R.id.toolbar_fragment);
+        View header = getLayoutInflater().inflate(R.layout.view_download_header, appBar, false);
+        header.findViewById(R.id.download_settings_button).setOnClickListener(v -> activity.navController.navigate(R.id.settingsFragment));
+        View cast = com.cappielloantonio.tempo.util.CastUi.createButton(requireContext());
+        if (cast != null) ((android.view.ViewGroup) header.findViewById(R.id.download_cast_container)).addView(cast);
+        appBar.addView(header);
     }
 
     private void initDownloadedView() {

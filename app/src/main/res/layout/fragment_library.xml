@@ -25,32 +25,9 @@
             android:paddingBottom="@dimen/global_padding_bottom">
 
             <!--  Barra di ricerca  -->
-            <com.google.android.material.card.MaterialCardView
+            <include
                 android:id="@+id/library_search_bar"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="0dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:drawablePadding="16dp"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="20dp"
-                    android:text="@string/library_search_hint"
-                    android:textAppearance="?attr/textAppearanceBodyLarge"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    app:drawableStartCompat="@drawable/ic_search"
-                    app:drawableTint="?attr/colorOnSurfaceVariant" />
-            </com.google.android.material.card.MaterialCardView>
+                layout="@layout/view_search_bar" />
 
             <!--  Album  -->
             <LinearLayout
