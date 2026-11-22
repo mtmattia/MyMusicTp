@@ -42,6 +42,8 @@ import com.google.android.material.elevation.SurfaceColors;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 @UnstableApi
@@ -79,6 +81,7 @@ public class PlayerControllerFragment extends Fragment {
         initQuickActionView();
         initCoverLyricsSlideView();
         initMediaListenable();
+        initLyricsPulse();
         initMediaLabelButton();
         initArtistLabelButton();
 
@@ -297,6 +300,30 @@ public class PlayerControllerFragment extends Fragment {
                     }
                 }
             }
+        });
+    }
+
+    // Synced lyrics: hand the line start times to the wave so the playhead pulses on each new line
+    private void initLyricsPulse() {
+        playerBottomSheetViewModel.getLiveLyricsList().observe(getViewLifecycleOwner(), list -> {
+            if (playerAudioWaveView == null) return;
+            long[] starts = null;
+            if (list != null && list.getStructuredLyrics() != null) {
+                for (com.cappielloantonio.tempo.subsonic.models.StructuredLyrics sl : list.getStructuredLyrics()) {
+                    if (sl == null || !sl.getSynced() || sl.getLine() == null || sl.getLine().isEmpty()) continue;
+                    List<com.cappielloantonio.tempo.subsonic.models.Line> lines = sl.getLine();
+                    long[] tmp = new long[lines.size()];
+                    int n = 0;
+                    for (com.cappielloantonio.tempo.subsonic.models.Line line : lines) {
+                        // OpenSubsonic: positive offset means lyrics appear sooner
+                        if (line != null && line.getStart() != null) tmp[n++] = line.getStart() - sl.getOffset();
+                    }
+                    starts = Arrays.copyOf(tmp, n);
+                    Arrays.sort(starts);
+                    break;
+                }
+            }
+            playerAudioWaveView.setLyricLines(playerBottomSheetViewModel.getLyricsMediaId(), starts);
         });
     }
 

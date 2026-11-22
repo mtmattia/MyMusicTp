@@ -155,7 +155,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/player_artist_name_label"
         app:played_color="@android:color/transparent"
-        app:scrubber_color="?attr/colorOnPrimaryContainer"
+        app:scrubber_color="@android:color/transparent"
         app:unplayed_color="?attr/colorPrimaryContainer" />
 
     <TextView
