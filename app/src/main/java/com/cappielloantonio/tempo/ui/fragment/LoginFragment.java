@@ -147,6 +147,8 @@ public class LoginFragment extends Fragment implements ClickCallback, MenuProvid
         Preferences.setServerId(serverId);
         Preferences.setServer(server);
         Preferences.setLocalAddress(localAddress);
+        // The address used by the previous server/session must not survive a server change.
+        Preferences.resetInUseServerAddress();
         Preferences.setUser(user);
         Preferences.setPassword(password);
         Preferences.setLowSecurity(isLowSecurity);
@@ -157,6 +159,7 @@ public class LoginFragment extends Fragment implements ClickCallback, MenuProvid
     private void resetServerPreference() {
         Preferences.setServerId(null);
         Preferences.setServer(null);
+        Preferences.resetInUseServerAddress();
         Preferences.setUser(null);
         Preferences.setPassword(null);
         Preferences.setToken(null);

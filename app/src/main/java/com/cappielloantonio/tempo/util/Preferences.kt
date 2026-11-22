@@ -173,6 +173,12 @@ object Preferences {
             ?: getServer()
     }
 
+    /** Forget the address chosen at runtime: next lookup falls back to the main server. */
+    @JvmStatic
+    fun resetInUseServerAddress() {
+        App.getInstance().preferences.edit().remove(IN_USE_SERVER_ADDRESS).apply()
+    }
+
     @JvmStatic
     fun isInUseServerAddressLocal(): Boolean {
         return getInUseServerAddress() == getLocalAddress()
