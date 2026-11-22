@@ -12,6 +12,7 @@ import androidx.fragment.app.DialogFragment;
 import com.cappielloantonio.tempo.R;
 import com.cappielloantonio.tempo.databinding.DialogGithubTempoUpdateBinding;
 import com.cappielloantonio.tempo.github.models.LatestRelease;
+import com.cappielloantonio.tempo.github.utils.AppUpdater;
 import com.cappielloantonio.tempo.util.Preferences;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -50,7 +51,7 @@ public class GithubTempoUpdateDialog extends DialogFragment {
         AlertDialog alertDialog = (AlertDialog) Objects.requireNonNull(getDialog());
 
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            openLink(latestRelease.getHtmlUrl());
+            AppUpdater.install(requireActivity(), latestRelease);
             Objects.requireNonNull(getDialog()).dismiss();
         });
 

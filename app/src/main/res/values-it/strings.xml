@@ -415,4 +415,15 @@
 	<string name="undraw_page">unDraw</string>
 	<string name="undraw_thanks">Un ringraziamento speciale va a unDraw, senza le cui illustrazioni non avremmo potuto rendere questa applicazione più bella.</string>
 	<string name="undraw_url">https://undraw.co/</string>
+	<string name="settings_auto_update_title">Aggiornamento automatico</string>
+	<string name="settings_auto_update_summary">Scarica le nuove versioni dalle Release GitHub e chiede di installarle</string>
+	<string name="settings_check_update_title">Controlla aggiornamenti</string>
+	<string name="settings_check_update_summary">Cerca adesso una nuova versione su GitHub</string>
+	<string name="app_update_none">Hai già l\'ultima versione</string>
+	<string name="app_update_check_failed">Impossibile controllare gli aggiornamenti</string>
+	<string name="app_update_downloading">Download aggiornamento %1$s…</string>
+	<string name="app_update_download_failed">Download dell\'aggiornamento non riuscito</string>
+	<string name="app_update_bad_signature">Aggiornamento rifiutato: la firma non corrisponde all\'app installata</string>
+	<string name="app_update_allow_install">Consenti a Tempo di installare app, poi torna indietro: l\'aggiornamento riprende</string>
+	<string name="app_update_install_failed">Installazione dell\'aggiornamento non riuscita</string>
 </resources>
