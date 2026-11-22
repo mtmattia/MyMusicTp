@@ -60,6 +60,18 @@ public class MusicUtil {
         return Uri.parse(uri.toString());
     }
 
+    /**
+     * Uri da usare in riproduzione: quello del download se il brano e' scaricato per intero,
+     * altrimenti lo stream. Un download parziale o in corso va in stream: leggerlo dalla cache
+     * dei download lascia buchi che la riproduzione deve riempire dalla rete e si blocca a meta'.
+     */
+    @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
+    public static Uri getPlaybackUri(String id) {
+        androidx.media3.exoplayer.offline.DownloadRequest request =
+                DownloadUtil.getDownloadTracker(App.getContext()).getCompletedDownloadRequest(id);
+        return request != null ? request.uri : getStreamUri(id);
+    }
+
     public static Uri getDownloadUri(String id) {
         StringBuilder uri = new StringBuilder();
 

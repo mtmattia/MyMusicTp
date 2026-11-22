@@ -61,6 +61,16 @@ public class DownloaderManager {
         return download != null && download.state != Download.STATE_FAILED;
     }
 
+    /**
+     * Richiesta del download solo se completo. Il suo uri e' la chiave esatta nella cache dei
+     * download: riprodurre con questo uri legge tutto in locale, senza buchi da riempire via rete.
+     */
+    @Nullable
+    public DownloadRequest getCompletedDownloadRequest(String mediaId) {
+        @Nullable Download download = downloads.get(mediaId);
+        return download != null && download.state == Download.STATE_COMPLETED ? download.request : null;
+    }
+
     public boolean isDownloaded(MediaItem mediaItem) {
         return isDownloaded(mediaItem.mediaId);
     }

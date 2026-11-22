@@ -217,19 +217,10 @@ public class MappingUtil {
     }
 
     private static Uri getUri(Child media) {
-        return DownloadUtil.getDownloadTracker(App.getContext()).isDownloaded(media.getId())
-                ? getDownloadUri(media.getId())
-                : MusicUtil.getStreamUri(media.getId());
+        return MusicUtil.getPlaybackUri(media.getId());
     }
 
     private static Uri getUri(PodcastEpisode podcastEpisode) {
-        return DownloadUtil.getDownloadTracker(App.getContext()).isDownloaded(podcastEpisode.getStreamId())
-                ? getDownloadUri(podcastEpisode.getStreamId())
-                : MusicUtil.getStreamUri(podcastEpisode.getStreamId());
-    }
-
-    private static Uri getDownloadUri(String id) {
-        Download download = new DownloadRepository().getDownload(id);
-        return download != null && !download.getDownloadUri().isEmpty() ? Uri.parse(download.getDownloadUri()) : MusicUtil.getDownloadUri(id);
+        return MusicUtil.getPlaybackUri(podcastEpisode.getStreamId());
     }
 }
