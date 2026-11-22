@@ -166,6 +166,7 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
     public void onResume() {
         super.onResume();
         refreshSharesView();
+        refreshCarousels();
 
         // The view model outlives this fragment: reload what depends on recent
         // listening every time the home is shown again, not only on first launch.
@@ -304,10 +305,58 @@ public class HomeTabMusicFragment extends Fragment implements ClickCallback {
             }, 1200);
         });
 
-        bind.homeTileShuffle.setOnClickListener(v -> playShuffled(homeViewModel.getRandomShuffleSample()));
-        bind.homeTileStarred.setOnClickListener(v -> playShuffled(homeViewModel.getStarredShuffleSample()));
-        bind.homeTileRecent.setOnClickListener(v -> openAlbumList(Constants.ALBUM_RECENTLY_PLAYED));
-        bind.homeTileMostPlayed.setOnClickListener(v -> openAlbumList(Constants.ALBUM_MOST_PLAYED));
+        initCarousels();
+    }
+
+    // Shuffle / Favorites carousels: a new random pick every time the home is shown,
+    // and the queue plays exactly the songs on screen.
+    private static final int CAROUSEL_SIZE = 20;
+    private SimilarTrackAdapter shuffleCarouselAdapter;
+    private SimilarTrackAdapter starredCarouselAdapter;
+
+    private void initCarousels() {
+        shuffleCarouselAdapter = new SimilarTrackAdapter(this, true);
+        starredCarouselAdapter = new SimilarTrackAdapter(this, true);
+        setupCarousel(bind.homeShuffleCarouselRecyclerView, shuffleCarouselAdapter);
+        setupCarousel(bind.homeStarredCarouselRecyclerView, starredCarouselAdapter);
+        bind.homeShuffleCarouselPlayAll.setOnClickListener(v -> playCarousel(shuffleCarouselAdapter));
+        bind.homeStarredCarouselPlayAll.setOnClickListener(v -> playCarousel(starredCarouselAdapter));
+    }
+
+    private void setupCarousel(androidx.recyclerview.widget.RecyclerView view, SimilarTrackAdapter adapter) {
+        view.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
+        view.setHasFixedSize(true);
+        view.setAdapter(adapter);
+        new CustomLinearSnapHelper().attachToRecyclerView(view);
+    }
+
+    private void refreshCarousels() {
+        if (bind == null || shuffleCarouselAdapter == null) return;
+        fillCarousel(homeViewModel.getRandomShuffleSample(), shuffleCarouselAdapter, bind.homeShuffleCarouselSector);
+        fillCarousel(homeViewModel.getStarredShuffleSample(), starredCarouselAdapter, bind.homeStarredCarouselSector);
+    }
+
+    private void fillCarousel(LiveData<List<Child>> source, SimilarTrackAdapter adapter, View sector) {
+        source.observe(getViewLifecycleOwner(), songs -> {
+            if (bind == null) return;
+            List<Child> pick = songs != null ? new ArrayList<>(songs) : new ArrayList<>();
+            MusicUtil.ratingFilter(pick);
+            java.util.Collections.shuffle(pick);
+            if (pick.size() > CAROUSEL_SIZE) pick = new ArrayList<>(pick.subList(0, CAROUSEL_SIZE));
+            adapter.setItems(pick);
+            sector.setVisibility(pick.isEmpty() ? View.GONE : View.VISIBLE);
+        });
+    }
+
+    private void playCarousel(SimilarTrackAdapter adapter) {
+        if (adapter.getItemCount() == 0) {
+            Toast.makeText(requireContext(), R.string.home_quick_nothing_to_play, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<Child> queue = new ArrayList<>();
+        for (int i = 0; i < adapter.getItemCount(); i++) queue.add(adapter.getItem(i));
+        MediaManager.startQueue(mediaBrowserListenableFuture, queue, 0);
+        activity.setBottomSheetInPeek(true);
     }
 
     private void openAlbumList(String key) {

@@ -142,6 +142,7 @@
     <string name="home_title_starred_tracks_see_all_button">See all</string>
     <string name="home_title_top_songs">Your top songs</string>
     <string name="home_tile_shuffle">Shuffle</string>
+    <string name="home_carousel_play_all">Play all</string>
     <string name="home_tile_starred">Favorites</string>
     <string name="home_tile_recent">Recent</string>
     <string name="home_tile_most_played">Top played</string>
