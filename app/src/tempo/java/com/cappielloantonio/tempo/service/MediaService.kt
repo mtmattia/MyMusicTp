@@ -34,6 +34,7 @@ import java.util.concurrent.Executors
 class MediaService : MediaLibraryService(), SessionAvailabilityListener {
     private lateinit var automotiveRepository: AutomotiveRepository
     private lateinit var player: ExoPlayer
+    private var playbackRecovery: PlaybackRecovery? = null
     private lateinit var castPlayer: CastPlayer
     private lateinit var mediaLibrarySession: MediaLibrarySession
     private lateinit var librarySessionCallback: MediaLibrarySessionCallback
@@ -45,6 +46,7 @@ class MediaService : MediaLibraryService(), SessionAvailabilityListener {
 
         initializeRepository()
         initializePlayer()
+        playbackRecovery = PlaybackRecovery.attach(this, player)
         initializeCastPlayer()
         initializeMediaLibrarySession()
         initializePlayerListener()
@@ -241,6 +243,7 @@ class MediaService : MediaLibraryService(), SessionAvailabilityListener {
         castExecutor.shutdown()
         if (this::castPlayer.isInitialized) castPlayer.setSessionAvailabilityListener(null)
         if (this::castPlayer.isInitialized) castPlayer.release()
+        playbackRecovery?.release()
         player.release()
         mediaLibrarySession.release()
         automotiveRepository.deleteMetadata()
