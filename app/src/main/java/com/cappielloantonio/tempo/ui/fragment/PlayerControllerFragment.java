@@ -223,8 +223,15 @@ public class PlayerControllerFragment extends Fragment {
                 setCodecBadge(kbps + " kbps");
                 playerMediaBitrate.setVisibility(View.GONE);
             } else if (suffix != null && kbps > 0) {
-                // FLAC e gli altri formati: codec + bitrate, es. "FLAC · 912 kbps"
-                setCodecBadge(suffix.toUpperCase(java.util.Locale.ROOT) + " · " + kbps + " kbps");
+                // FLAC e gli altri formati: codec e, sotto in piccolo, il bitrate
+                String codec = suffix.toUpperCase(java.util.Locale.ROOT);
+                android.text.SpannableStringBuilder text = new android.text.SpannableStringBuilder(codec)
+                        .append("\n");
+                int start = text.length();
+                text.append(kbps + " kbps");
+                text.setSpan(new android.text.style.RelativeSizeSpan(0.75f), start, text.length(), 0);
+                text.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, codec.length(), 0);
+                setCodecBadge(text);
                 playerMediaBitrate.setVisibility(View.GONE);
             } else {
                 setCodecBadge(suffix != null ? suffix.toUpperCase(java.util.Locale.ROOT) : null);
@@ -249,12 +256,12 @@ public class PlayerControllerFragment extends Fragment {
         });
     }
 
-    private void setCodecBadge(String codec) {
+    private void setCodecBadge(CharSequence codec) {
         if (playerMediaCodecBadge == null) return;
-        if (codec == null || codec.trim().isEmpty()) {
+        if (codec == null || codec.toString().trim().isEmpty()) {
             playerMediaCodecBadge.setVisibility(View.GONE);
         } else {
-            playerMediaCodecBadge.setText(codec.trim());
+            playerMediaCodecBadge.setText(codec);
             playerMediaCodecBadge.setVisibility(View.VISIBLE);
         }
     }
