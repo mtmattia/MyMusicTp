@@ -60,16 +60,14 @@ public final class CoverPaletteUtil {
                     public void onResourceReady(@NonNull Bitmap bitmap, @Nullable Transition<? super Bitmap> transition) {
                         Palette.from(bitmap).maximumColorCount(24).generate(palette -> {
                             if (!fragment.isAdded()) return;
-                            Palette.Swatch swatch = palette == null ? null : firstNonNull(
-                                    palette.getVibrantSwatch(), palette.getDominantSwatch(),
-                                    palette.getMutedSwatch(), palette.getDarkVibrantSwatch(), palette.getLightVibrantSwatch());
-                            if (swatch == null) {
-                                callback.onTint(surface, primary);
-                                return;
-                            }
+                            // Dark/black covers: the dominant color is gray, so pick the most colorful
+                            // detail instead (e.g. a red rose on a black cover); if the cover is truly
+                            // colorless, fall back to the theme's primary hue so the tint still shows.
+                            Palette.Swatch swatch = palette == null ? null : mostColorful(palette);
+                            int base = swatch != null ? swatch.getRgb() : primary;
                             boolean dark = isDark(context);
-                            callback.onTint(normalise(swatch.getRgb(), dark ? 0.22f : 0.86f, 0.70f),
-                                    normalise(swatch.getRgb(), dark ? 0.70f : 0.38f, 0.85f));
+                            callback.onTint(normalise(base, dark ? 0.27f : 0.82f, 0.85f),
+                                    normalise(base, dark ? 0.72f : 0.38f, 0.95f));
                         });
                     }
 
@@ -130,7 +128,7 @@ public final class CoverPaletteUtil {
     public static int normalise(@ColorInt int color, float lightness, float maxSaturation) {
         float[] hsl = new float[3];
         ColorUtils.colorToHSL(color, hsl);
-        hsl[1] = Math.min(maxSaturation, Math.max(hsl[1], 0.18f));
+        hsl[1] = Math.min(maxSaturation, Math.max(hsl[1], 0.40f));
         hsl[2] = lightness;
         return ColorUtils.HSLToColor(hsl);
     }
@@ -143,10 +141,26 @@ public final class CoverPaletteUtil {
         return view == null ? Color.BLACK : MaterialColors.getColor(view, com.google.android.material.R.attr.colorSurface);
     }
 
+    /** Swatch with the best mix of saturation and presence; null if the cover is grayscale. */
     @Nullable
-    private static Palette.Swatch firstNonNull(Palette.Swatch... swatches) {
-        for (Palette.Swatch s : swatches) if (s != null) return s;
-        return null;
+    private static Palette.Swatch mostColorful(@NonNull Palette palette) {
+        Palette.Swatch best = null;
+        double bestScore = 0;
+        int total = 0;
+        for (Palette.Swatch s : palette.getSwatches()) total += s.getPopulation();
+        if (total == 0) return null;
+        for (Palette.Swatch s : palette.getSwatches()) {
+            float[] hsl = s.getHsl();
+            // Ignore near-gray and near-black/white swatches: they carry no hue
+            if (hsl[1] < 0.22f || hsl[2] < 0.08f || hsl[2] > 0.95f) continue;
+            double share = (double) s.getPopulation() / total;
+            double score = hsl[1] * Math.sqrt(Math.max(share, 0.002));
+            if (score > bestScore) {
+                bestScore = score;
+                best = s;
+            }
+        }
+        return best;
     }
 
     private static void animate(View target, @Nullable View solidTarget, @ColorInt int top, @ColorInt int surface) {
@@ -155,14 +169,14 @@ public final class CoverPaletteUtil {
         target.setTag(TAG_COLOR, top);
 
         GradientDrawable gradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{from, ColorUtils.blendARGB(from, surface, 0.45f), surface});
+                new int[]{from, ColorUtils.blendARGB(from, surface, 0.25f), ColorUtils.blendARGB(from, surface, 0.6f)});
         target.setBackground(gradient);
 
         ValueAnimator animator = ValueAnimator.ofArgb(from, top);
         animator.setDuration(450);
         animator.addUpdateListener(a -> {
             int c = (int) a.getAnimatedValue();
-            gradient.setColors(new int[]{c, ColorUtils.blendARGB(c, surface, 0.45f), surface});
+            gradient.setColors(new int[]{c, ColorUtils.blendARGB(c, surface, 0.25f), ColorUtils.blendARGB(c, surface, 0.6f)});
             if (solidTarget != null) solidTarget.setBackgroundColor(c);
         });
         animator.start();

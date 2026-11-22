@@ -45,6 +45,16 @@ public class AudioWaveView extends View {
         }
     };
 
+    private final Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    @Nullable
+    private String lyricsMediaId;
+    @Nullable
+    private long[] lyricStarts;
+    private int lastLyricLine = -2;
+    private long pulseStartNs = 0;
+    private static final float PULSE_SECONDS = 0.55f;
+
     @Nullable
     private Player player;
     private int tint = Color.WHITE;
@@ -79,6 +89,13 @@ public class AudioWaveView extends View {
         this.player = player;
         if (player != null) player.addListener(listener);
         postInvalidateOnAnimation();
+    }
+
+    /** Start times (ms) of synced lyric lines for the given track, or null when not synced. */
+    public void setLyricLines(@Nullable String mediaId, @Nullable long[] startsMs) {
+        lyricsMediaId = mediaId;
+        lyricStarts = startsMs;
+        lastLyricLine = -2;
     }
 
     public void setTint(@ColorInt int color) {
@@ -160,8 +177,43 @@ public class AudioWaveView extends View {
             canvas.drawRoundRect(rect, barWidth / 2f, barWidth / 2f, barPaint);
         }
 
-        if (playing || live > 0.005f) postInvalidateOnAnimation();
+        // Playhead: a vertical bar instead of the round scrubber, pulsing on each new lyric line
+        float pulse = lyricPulse(p, key, now);
+        float px = Math.min(getWidth() - barWidth, headF * (barWidth + gap));
+        float ph = h * 0.8f;
+        float pw = barWidth * (1f + 0.35f * pulse);
+        if (pulse > 0f) {
+            for (int g = 3; g >= 1; g--) {
+                float spread = barWidth * g * 1.6f * pulse;
+                rect.set(px - spread, mid - ph / 2f - spread * 0.4f, px + pw + spread, mid + ph / 2f + spread * 0.4f);
+                glowPaint.setColor(ColorUtils.setAlphaComponent(tint, (int) (70 * pulse / g)));
+                canvas.drawRoundRect(rect, pw + spread, pw + spread, glowPaint);
+            }
+        }
+        rect.set(px, mid - ph / 2f, px + pw, mid + ph / 2f);
+        int head255 = ColorUtils.blendARGB(tint, Color.WHITE, 0.35f + 0.5f * pulse);
+        barPaint.setColor(head255);
+        canvas.drawRoundRect(rect, pw / 2f, pw / 2f, barPaint);
+
+        if (playing || live > 0.005f || pulse > 0f) postInvalidateOnAnimation();
         else lastFrameNs = 0;
+    }
+
+    private float lyricPulse(Player p, String key, long now) {
+        long[] starts = lyricStarts;
+        if (starts == null || starts.length == 0 || !key.equals(lyricsMediaId)) return 0f;
+        long pos = p.getCurrentPosition();
+        int idx = java.util.Arrays.binarySearch(starts, pos);
+        int line = idx >= 0 ? idx : -idx - 2; // last line already started
+        if (line != lastLyricLine) {
+            // Pulse only when playback reaches the next line, not on seeks or first sight
+            if (lastLyricLine != -2 && line == lastLyricLine + 1) pulseStartNs = now;
+            lastLyricLine = line;
+        }
+        if (pulseStartNs == 0) return 0f;
+        float t = (now - pulseStartNs) / 1e9f / PULSE_SECONDS;
+        if (t >= 1f) return 0f;
+        return (1f - t) * (1f - t);
     }
 
     private static float smooth(float t) {
