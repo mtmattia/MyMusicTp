@@ -1,17 +1,20 @@
 package com.cappielloantonio.tempo.util;
 
-import android.widget.ImageView;
-
 import androidx.annotation.NonNull;
 
 import com.cappielloantonio.tempo.App;
-import com.cappielloantonio.tempo.glide.CustomGlideRequest;
+import com.cappielloantonio.tempo.R;
 import com.cappielloantonio.tempo.subsonic.base.ApiResponse;
 import com.cappielloantonio.tempo.subsonic.models.AlbumID3;
 import com.cappielloantonio.tempo.subsonic.models.Child;
+import com.cappielloantonio.tempo.ui.view.CoverSlideshowView;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import retrofit2.Call;
@@ -19,35 +22,37 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
- * Copertina per i riquadri di decenni e generi: la prende da un album del decennio
- * o da un brano del genere e la ricorda, così lo scorrimento non rifà le richieste.
+ * Copertine per i riquadri animati di decenni e generi: alcuni album del decennio o
+ * brani del genere, in ordine casuale. Le ricorda, così lo scorrimento non rifà le richieste.
  */
 public final class TileCoverLoader {
-    private static final Map<String, String> CACHE = new ConcurrentHashMap<>();
-    private static final String NONE = "";
+    private static final int MAX_COVERS = 6;
+    private static final Map<String, List<String>> CACHE = new ConcurrentHashMap<>();
 
     private TileCoverLoader() {
     }
 
-    public static void loadDecade(ImageView view, int decade) {
-        String key = "decade:" + decade;
-        load(view, key, () -> App.getSubsonicClientInstance(false)
+    public static void loadDecade(CoverSlideshowView view, int decade) {
+        load(view, "decade:" + decade, () -> App.getSubsonicClientInstance(false)
                 .getAlbumSongListClient()
-                .getAlbumList2("byYear", 1, 0, decade, decade + 9), response -> {
+                .getAlbumList2("byYear", 30, 0, decade, decade + 9), response -> {
+            List<String> ids = new ArrayList<>();
             List<AlbumID3> albums = response.getSubsonicResponse().getAlbumList2() != null
                     ? response.getSubsonicResponse().getAlbumList2().getAlbums() : null;
-            return albums != null && !albums.isEmpty() ? albums.get(0).getCoverArtId() : null;
+            if (albums != null) for (AlbumID3 a : albums) ids.add(a.getCoverArtId());
+            return ids;
         });
     }
 
-    public static void loadGenre(ImageView view, String genre) {
-        String key = "genre:" + genre;
-        load(view, key, () -> App.getSubsonicClientInstance(false)
+    public static void loadGenre(CoverSlideshowView view, String genre) {
+        load(view, "genre:" + genre, () -> App.getSubsonicClientInstance(false)
                 .getAlbumSongListClient()
-                .getSongsByGenre(genre, 1, 0), response -> {
+                .getSongsByGenre(genre, 60, 0), response -> {
+            List<String> ids = new ArrayList<>();
             List<Child> songs = response.getSubsonicResponse().getSongsByGenre() != null
                     ? response.getSubsonicResponse().getSongsByGenre().getSongs() : null;
-            return songs != null && !songs.isEmpty() ? songs.get(0).getCoverArtId() : null;
+            if (songs != null) for (Child c : songs) ids.add(c.getCoverArtId());
+            return ids;
         });
     }
 
@@ -56,45 +61,43 @@ public final class TileCoverLoader {
     }
 
     private interface Extractor {
-        String coverId(ApiResponse response);
+        List<String> coverIds(ApiResponse response);
     }
 
-    private static void load(ImageView view, String key, CallFactory call, Extractor extractor) {
-        view.setTag(com.cappielloantonio.tempo.R.id.tile_cover_key, key);
-        view.setImageDrawable(null);
+    private static void load(CoverSlideshowView view, String key, CallFactory call, Extractor extractor) {
+        view.setTag(R.id.tile_cover_key, key);
 
-        String cached = CACHE.get(key);
+        List<String> cached = CACHE.get(key);
         if (cached != null) {
-            show(view, key, cached);
+            view.setCovers(cached);
             return;
         }
+        view.clear();
 
         call.create().enqueue(new Callback<ApiResponse>() {
             @Override
             public void onResponse(@NonNull Call<ApiResponse> c, @NonNull Response<ApiResponse> response) {
-                String id = null;
+                List<String> ids = new ArrayList<>();
                 if (response.isSuccessful() && response.body() != null) {
                     try {
-                        id = extractor.coverId(response.body());
+                        Set<String> unique = new LinkedHashSet<>();
+                        for (String id : extractor.coverIds(response.body())) {
+                            if (id != null && !id.isEmpty()) unique.add(id);
+                        }
+                        ids.addAll(unique);
+                        Collections.shuffle(ids);
+                        if (ids.size() > MAX_COVERS) ids = new ArrayList<>(ids.subList(0, MAX_COVERS));
                     } catch (Exception ignored) {
                     }
                 }
-                CACHE.put(key, id != null ? id : NONE);
-                show(view, key, id != null ? id : NONE);
+                CACHE.put(key, ids);
+                // La vista nel frattempo può essere stata riciclata per un altro elemento
+                if (key.equals(view.getTag(R.id.tile_cover_key))) view.setCovers(ids);
             }
 
             @Override
             public void onFailure(@NonNull Call<ApiResponse> c, @NonNull Throwable t) {
             }
         });
-    }
-
-    private static void show(ImageView view, String key, String coverId) {
-        // La vista nel frattempo può essere stata riciclata per un altro elemento
-        if (!key.equals(view.getTag(com.cappielloantonio.tempo.R.id.tile_cover_key)) || coverId.isEmpty()) return;
-        CustomGlideRequest.Builder
-                .from(view.getContext(), coverId, CustomGlideRequest.ResourceType.Album)
-                .build()
-                .into(view);
     }
 }

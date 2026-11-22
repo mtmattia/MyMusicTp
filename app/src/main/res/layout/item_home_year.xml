@@ -16,12 +16,10 @@
         app:cardElevation="0dp"
         app:strokeWidth="0dp">
 
-        <ImageView
+        <com.cappielloantonio.tempo.ui.view.CoverSlideshowView
             android:id="@+id/tile_cover"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:contentDescription="@null"
-            android:scaleType="centerCrop" />
+            android:layout_height="match_parent" />
 
         <View
             android:layout_width="match_parent"
@@ -39,7 +37,7 @@
             android:padding="12dp"
             android:text="@string/label_placeholder"
             android:textColor="@color/gradientTitleColor"
-            android:textSize="17sp"
+            android:textSize="24sp"
             android:textStyle="bold" />
     </com.google.android.material.card.MaterialCardView>
 </FrameLayout>
