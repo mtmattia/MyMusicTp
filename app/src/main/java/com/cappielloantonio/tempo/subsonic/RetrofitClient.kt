@@ -36,7 +36,9 @@ class RetrofitClient(subsonic: Subsonic) {
          */
         @JvmStatic
         fun evictConnections() {
-            okHttpClient.connectionPool.evictAll()
+            // Chiudere un socket TLS scrive sulla rete (close_notify): sul main thread
+            // Android lancia NetworkOnMainThreadException e l'app si chiude.
+            Thread({ okHttpClient.connectionPool.evictAll() }, "evict-connections").start()
         }
 
         private fun buildOkHttpClient(): OkHttpClient {
