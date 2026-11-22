@@ -44,7 +44,21 @@ android {
         }
     }
 
+    // Fixed debug key: CI runners otherwise generate a new one per run,
+    // so each APK has a different signature and won't install as an update.
+    signingConfigs {
+        debug {
+            storeFile file('ci-debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             shrinkResources true
             minifyEnabled true
