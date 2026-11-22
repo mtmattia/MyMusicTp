@@ -13,6 +13,8 @@ import androidx.media3.datasource.DefaultDataSource;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.datasource.ResolvingDataSource;
 import androidx.media3.datasource.cache.Cache;
+import androidx.media3.common.C;
+import androidx.media3.datasource.cache.CacheDataSink;
 import androidx.media3.datasource.cache.CacheDataSource;
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor;
 import androidx.media3.datasource.cache.NoOpCacheEvictor;
@@ -23,6 +25,8 @@ import androidx.media3.exoplayer.audio.AudioSink;
 import androidx.media3.exoplayer.audio.DefaultAudioSink;
 import androidx.media3.common.audio.AudioProcessor;
 import com.cappielloantonio.tempo.service.AudioLevelProcessor;
+import androidx.media3.exoplayer.offline.DefaultDownloadIndex;
+import androidx.media3.exoplayer.offline.DefaultDownloaderFactory;
 import androidx.media3.exoplayer.offline.DownloadManager;
 import androidx.media3.exoplayer.offline.DownloadNotificationHelper;
 
@@ -44,6 +48,8 @@ public final class DownloadUtil {
 
     private static final String STREAMING_CACHE_CONTENT_DIRECTORY = "streaming_cache";
     private static final String DOWNLOAD_CONTENT_DIRECTORY = "downloads";
+    private static final int DOWNLOAD_WRITE_BUFFER_SIZE = 256 * 1024;
+    private static final int MAX_PARALLEL_DOWNLOADS = 4;
 
     private static DataSource.Factory dataSourceFactory;
     private static DataSource.Factory httpDataSourceFactory;
@@ -176,13 +182,23 @@ public final class DownloadUtil {
 
     private static synchronized void ensureDownloadManagerInitialized(Context context) {
         if (downloadManager == null) {
+            // Download solo audio (le copertine non vengono scaricate qui). Per velocizzarli:
+            // un file unico per brano invece di pezzi da 5 MB e buffer di scrittura piu' grande
+            // (il default da 20 KB fa molte scritture piccole, lente su memoria/SD).
+            CacheDataSource.Factory downloadCacheFactory = new CacheDataSource.Factory()
+                    .setCache(getDownloadCache(context))
+                    .setUpstreamDataSourceFactory(getHttpDataSourceFactory())
+                    .setCacheWriteDataSinkFactory(new CacheDataSink.Factory()
+                            .setCache(getDownloadCache(context))
+                            .setFragmentSize(C.LENGTH_UNSET)
+                            .setBufferSize(DOWNLOAD_WRITE_BUFFER_SIZE));
+
             downloadManager = new DownloadManager(
                     context,
-                    getDatabaseProvider(context),
-                    getDownloadCache(context),
-                    getHttpDataSourceFactory(),
-                    Executors.newFixedThreadPool(6)
+                    new DefaultDownloadIndex(getDatabaseProvider(context)),
+                    new DefaultDownloaderFactory(downloadCacheFactory, Executors.newFixedThreadPool(6))
             );
+            downloadManager.setMaxParallelDownloads(MAX_PARALLEL_DOWNLOADS);
 
             downloaderManager = new DownloaderManager(context, getHttpDataSourceFactory(), downloadManager);
         }
