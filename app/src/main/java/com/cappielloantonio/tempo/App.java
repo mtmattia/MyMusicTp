@@ -23,6 +23,7 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        com.cappielloantonio.tempo.util.CrashReporter.install(this);
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         String themePref = sharedPreferences.getString(Preferences.THEME, ThemeHelper.DEFAULT_MODE);

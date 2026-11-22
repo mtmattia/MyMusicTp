@@ -71,6 +71,7 @@ public class MainActivity extends BaseActivity {
         bind = ActivityMainBinding.inflate(getLayoutInflater());
         View view = bind.getRoot();
         setContentView(view);
+        com.cappielloantonio.tempo.util.CrashReporter.showIfPending(this);
 
         mainViewModel = new ViewModelProvider(this).get(MainViewModel.class);
 
