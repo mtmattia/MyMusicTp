@@ -27,6 +27,7 @@ import androidx.media3.session.SessionToken;
 import com.cappielloantonio.tempo.R;
 import com.cappielloantonio.tempo.databinding.InnerFragmentPlayerLyricsBinding;
 import com.cappielloantonio.tempo.service.MediaService;
+import com.cappielloantonio.tempo.subsonic.models.Child;
 import com.cappielloantonio.tempo.subsonic.models.Line;
 import com.cappielloantonio.tempo.subsonic.models.LyricsList;
 import com.cappielloantonio.tempo.subsonic.models.StructuredLyrics;
@@ -80,6 +81,12 @@ public class PlayerLyricsFragment extends Fragment {
     public void onResume() {
         super.onResume();
         bindMediaController();
+
+        // Reload if lyrics were fetched before the server capabilities were known
+        // (no-op when they are already up to date).
+        Child media = playerBottomSheetViewModel.getLiveMedia().getValue();
+        if (media != null) playerBottomSheetViewModel.refreshMediaInfo(requireActivity(), media);
+        updatePanelContent();
     }
 
     @Override

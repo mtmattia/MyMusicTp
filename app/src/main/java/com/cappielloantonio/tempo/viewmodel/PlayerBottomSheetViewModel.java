@@ -64,6 +64,7 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
     private String requestedAlbumId;
     private String requestedArtistId;
     private String lyricsMediaId;
+    private Boolean lyricsFetchedWithExtension;
 
 
     public PlayerBottomSheetViewModel(@NonNull Application application) {
@@ -157,19 +158,25 @@ public class PlayerBottomSheetViewModel extends AndroidViewModel {
         if (media == null) return;
 
         final String mediaId = media.getId();
+        final boolean useExtension = OpenSubsonicExtensionsUtil.isSongLyricsExtensionAvailable();
 
-        // Same track re-emitted: keep what we have, no new request.
-        if (Objects.equals(mediaId, lyricsMediaId) && (lyricsLiveData.getValue() != null || lyricsListLiveData.getValue() != null)) {
+        // Same track re-emitted: keep what we have, no new request. Refetch if the
+        // synced-lyrics extension became available meanwhile (plain lyrics were loaded
+        // before the server answered the ping).
+        if (Objects.equals(mediaId, lyricsMediaId)
+                && Objects.equals(useExtension, lyricsFetchedWithExtension)
+                && (lyricsLiveData.getValue() != null || lyricsListLiveData.getValue() != null)) {
             return;
         }
 
         lyricsMediaId = mediaId;
+        lyricsFetchedWithExtension = useExtension;
 
         // Clear immediately (main thread) so the previous track's lyrics never stay on screen.
         lyricsLiveData.setValue(null);
         lyricsListLiveData.setValue(null);
 
-        if (OpenSubsonicExtensionsUtil.isSongLyricsExtensionAvailable()) {
+        if (useExtension) {
             openRepository.getLyricsBySongId(mediaId).observe(owner, lyricsList -> {
                 if (Objects.equals(mediaId, lyricsMediaId)) lyricsListLiveData.setValue(lyricsList);
             });
