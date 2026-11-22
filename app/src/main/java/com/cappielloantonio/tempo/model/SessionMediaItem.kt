@@ -261,12 +261,13 @@ class SessionMediaItem() {
 
     private fun getStreamUri(): Uri {
         return when (type) {
+            // Coda ripristinata: se il brano e' scaricato va letto dal download, non dalla rete.
             Constants.MEDIA_TYPE_MUSIC -> {
-                MusicUtil.getStreamUri(id)
+                MusicUtil.getPlaybackUri(id)
             }
 
             Constants.MEDIA_TYPE_PODCAST -> {
-                MusicUtil.getStreamUri(streamId)
+                MusicUtil.getPlaybackUri(streamId)
             }
 
             Constants.MEDIA_TYPE_RADIO -> {

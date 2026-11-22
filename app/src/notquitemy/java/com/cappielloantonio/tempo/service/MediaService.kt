@@ -264,12 +264,17 @@ class MediaService : MediaLibraryService() {
     }
 
     private fun initializeLoadControl(): DefaultLoadControl {
+        val strategy = Preferences.getBufferingStrategy()
+        val minBufferMs = (DefaultLoadControl.DEFAULT_MIN_BUFFER_MS * strategy).toInt()
+        val maxBufferMs = maxOf((DefaultLoadControl.DEFAULT_MAX_BUFFER_MS * strategy).toInt(), minBufferMs)
+        // Con "Minimo" il buffer era 5 s e per ripartire dopo un rebuffer servivano proprio 5 s:
+        // il player poteva restare fermo in buffering finche' non si spostava il cursore.
         return DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                (DefaultLoadControl.DEFAULT_MIN_BUFFER_MS * Preferences.getBufferingStrategy()).toInt(),
-                (DefaultLoadControl.DEFAULT_MAX_BUFFER_MS * Preferences.getBufferingStrategy()).toInt(),
-                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
-                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+                minBufferMs,
+                maxBufferMs,
+                minOf(DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS, minBufferMs / 2),
+                minOf(DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS, minBufferMs / 2)
             )
             .build()
     }
