@@ -36,6 +36,21 @@ import com.cappielloantonio.tempo.ui.adapter.AlbumHorizontalAdapter;
 import com.cappielloantonio.tempo.util.Constants;
 import com.cappielloantonio.tempo.viewmodel.AlbumListPageViewModel;
 
+import android.content.ComponentName;
+import android.os.Handler;
+import android.os.Looper;
+
+import androidx.media3.session.MediaBrowser;
+import androidx.media3.session.SessionToken;
+
+import com.cappielloantonio.tempo.repository.AlbumRepository;
+import com.cappielloantonio.tempo.service.MediaManager;
+import com.cappielloantonio.tempo.service.MediaService;
+import com.cappielloantonio.tempo.subsonic.models.Child;
+import com.google.common.util.concurrent.ListenableFuture;
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @OptIn(markerClass = UnstableApi.class)
@@ -45,6 +60,10 @@ public class AlbumListPageFragment extends Fragment implements ClickCallback, Me
     private MainActivity activity;
     private AlbumListPageViewModel albumListPageViewModel;
     private AlbumHorizontalAdapter albumHorizontalAdapter;
+    private ListenableFuture<MediaBrowser> mediaBrowserListenableFuture;
+    private List<AlbumID3> currentAlbums = new ArrayList<>();
+    private final Handler shuffleHandler = new Handler(Looper.getMainLooper());
+    private static final int SHUFFLE_MAX_ALBUMS = 15;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -59,6 +78,19 @@ public class AlbumListPageFragment extends Fragment implements ClickCallback, Me
         initAlbumListView();
 
         return view;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mediaBrowserListenableFuture = new MediaBrowser.Builder(requireContext(), new SessionToken(requireContext(), new ComponentName(requireContext(), MediaService.class))).buildAsync();
+    }
+
+    @Override
+    public void onStop() {
+        shuffleHandler.removeCallbacksAndMessages(null);
+        MediaBrowser.releaseFuture(mediaBrowserListenableFuture);
+        super.onStop();
     }
 
     @Override
@@ -127,6 +159,7 @@ public class AlbumListPageFragment extends Fragment implements ClickCallback, Me
 
         bind.albumListRecyclerView.setAdapter(albumHorizontalAdapter);
         albumListPageViewModel.getAlbumList(getViewLifecycleOwner()).observe(getViewLifecycleOwner(), albums -> {
+            currentAlbums = albums != null ? new ArrayList<>(albums) : new ArrayList<>();
             albumHorizontalAdapter.setItems(albums);
             setAlbumListPageSubtitle(albums);
             setAlbumListPageSorter();
@@ -138,6 +171,7 @@ public class AlbumListPageFragment extends Fragment implements ClickCallback, Me
         });
 
         bind.albumListSortImageView.setOnClickListener(view -> showPopupMenu(view, R.menu.sort_horizontal_album_popup_menu));
+        bind.albumListShuffleButton.setOnClickListener(view -> shuffleAlbums());
     }
 
     @Override
@@ -230,6 +264,43 @@ public class AlbumListPageFragment extends Fragment implements ClickCallback, Me
                 bind.albumListSortImageView.setVisibility(View.VISIBLE);
                 break;
         }
+    }
+
+    // Shuffle across the listed albums: pick some at random, merge their tracks, shuffle.
+    private void shuffleAlbums() {
+        if (currentAlbums == null || currentAlbums.isEmpty() || bind == null) return;
+
+        List<AlbumID3> picks = new ArrayList<>(currentAlbums);
+        Collections.shuffle(picks);
+        if (picks.size() > SHUFFLE_MAX_ALBUMS) picks = picks.subList(0, SHUFFLE_MAX_ALBUMS);
+
+        bind.albumListShuffleButton.setEnabled(false);
+        AlbumRepository repository = new AlbumRepository();
+        List<Child> collected = new ArrayList<>();
+        int[] pending = {picks.size()};
+        boolean[] started = {false};
+
+        Runnable start = () -> {
+            if (started[0]) return;
+            started[0] = true;
+            shuffleHandler.removeCallbacksAndMessages(null);
+            if (bind != null) bind.albumListShuffleButton.setEnabled(true);
+            if (collected.isEmpty() || activity == null) return;
+            Collections.shuffle(collected);
+            MediaManager.startQueue(mediaBrowserListenableFuture, collected, 0);
+            activity.setBottomSheetInPeek(true);
+        };
+
+        for (AlbumID3 album : picks) {
+            repository.getAlbumTracks(album.getId()).observe(getViewLifecycleOwner(), tracks -> {
+                if (started[0]) return;
+                if (tracks != null) collected.addAll(tracks);
+                if (--pending[0] <= 0) start.run();
+            });
+        }
+
+        // Failed requests never answer: start with what arrived.
+        shuffleHandler.postDelayed(start, 5000);
     }
 
     @Override

@@ -118,10 +118,20 @@ public class PlayerControllerFragment extends Fragment {
         playerOpenQueueButton = bind.getRoot().findViewById(R.id.player_open_queue_button);
         playerTrackInfo = bind.getRoot().findViewById(R.id.player_info_track);
         playerAudioWaveView = bind.getRoot().findViewById(R.id.player_audio_wave_view);
+
+        // DefaultTimeBar reads colors with getInt(): a color-selector resource crashes
+        // inflation, so the translucent buffered tint is applied here instead.
+        View timeBar = bind.getRoot().findViewById(R.id.exo_progress);
+        if (timeBar instanceof androidx.media3.ui.DefaultTimeBar) {
+            int onContainer = com.google.android.material.color.MaterialColors.getColor(timeBar,
+                    com.google.android.material.R.attr.colorOnPrimaryContainer);
+            ((androidx.media3.ui.DefaultTimeBar) timeBar).setBufferedColor(
+                    androidx.core.graphics.ColorUtils.setAlphaComponent(onContainer, 0x59));
+        }
     }
 
     private void initQuickActionView() {
-        playerQuickActionView.setBackgroundColor(SurfaceColors.getColorForElevation(requireContext(), 8));
+        playerQuickActionView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
 
         playerOpenQueueButton.setOnClickListener(view -> {
             PlayerBottomSheetFragment playerBottomSheetFragment = (PlayerBottomSheetFragment) requireActivity().getSupportFragmentManager().findFragmentByTag("PlayerBottomSheet");
@@ -172,8 +182,8 @@ public class PlayerControllerFragment extends Fragment {
     private void setMetadata(MediaMetadata mediaMetadata) {
         if (playerAudioWaveView != null && isAdded()) {
             String coverArtId = mediaMetadata.extras != null ? mediaMetadata.extras.getString("coverArtId") : null;
-            CoverPaletteUtil.extractAccent(this, coverArtId, color -> {
-                if (playerAudioWaveView != null) playerAudioWaveView.setTint(color);
+            CoverPaletteUtil.extract(this, coverArtId, (background, accent) -> {
+                if (playerAudioWaveView != null) playerAudioWaveView.setTint(accent);
             });
         }
 

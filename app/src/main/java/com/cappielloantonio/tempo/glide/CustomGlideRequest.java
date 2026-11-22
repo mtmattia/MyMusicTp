@@ -46,7 +46,10 @@ public class CustomGlideRequest {
 
     public static RequestOptions createRequestOptions(Context context, String item, ResourceType type) {
         return new RequestOptions()
-                .placeholder(new ColorDrawable(SurfaceColors.SURFACE_5.getColor(context)))
+                // Album/song: show the CD-case cover while loading too, not a flat gray square
+                .placeholder(type == ResourceType.Album || type == ResourceType.Song
+                        ? getPlaceholder(context, type)
+                        : new ColorDrawable(SurfaceColors.SURFACE_5.getColor(context)))
                 .fallback(getPlaceholder(context, type))
                 .error(getPlaceholder(context, type))
                 .diskCacheStrategy(DEFAULT_DISK_CACHE_STRATEGY)

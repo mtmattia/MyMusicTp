@@ -135,7 +135,7 @@
     <com.cappielloantonio.tempo.ui.view.AudioWaveView
         android:id="@+id/player_audio_wave_view"
         android:layout_width="0dp"
-        android:layout_height="56dp"
+        android:layout_height="40dp"
         android:importantForAccessibility="no"
         app:layout_constraintBottom_toBottomOf="@id/exo_progress"
         app:layout_constraintEnd_toEndOf="@id/exo_progress"
@@ -150,11 +150,11 @@
         android:layout_marginTop="20dp"
         android:layout_marginEnd="16dp"
         app:bar_height="2dp"
-        app:buffered_color="?attr/colorOnSecondaryContainer"
+        app:buffered_color="?attr/colorPrimaryContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/player_artist_name_label"
-        app:played_color="?attr/colorOnPrimaryContainer"
+        app:played_color="@android:color/transparent"
         app:scrubber_color="?attr/colorOnPrimaryContainer"
         app:unplayed_color="?attr/colorPrimaryContainer" />
 

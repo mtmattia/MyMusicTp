@@ -73,6 +73,7 @@ public class HomeFragment extends Fragment {
         tabLayout = new TabLayout(requireContext());
         tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
         tabLayout.setTabMode(TabLayout.MODE_FIXED);
+        tabLayout.setBackgroundColor(android.graphics.Color.TRANSPARENT);
 
         appBarLayout.addView(tabLayout);
     }
