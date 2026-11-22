@@ -380,22 +380,24 @@ object MediaBrowserTree {
         )
 
         return Futures.transform(Futures.allAsList(tiles), { items ->
-            LibraryResult.ofItemList(ImmutableList.copyOf(items), null)
+            LibraryResult.ofItemList(ImmutableList.copyOf(items.filterNotNull()), null)
         }, MoreExecutors.directExecutor())
     }
 
+    /** Riquadro della sezione con la copertina del primo elemento; null se la sezione è vuota. */
     private fun tile(
         id: String,
         content: ListenableFuture<LibraryResult<ImmutableList<MediaItem>>>
-    ): ListenableFuture<MediaItem> {
+    ): ListenableFuture<MediaItem?> {
         val node = treeNodes[id]!!.item
         val withArt = Futures.transform(content, { result ->
+            if (result?.value.isNullOrEmpty()) return@transform null
             val art = result?.value?.firstOrNull { it.mediaMetadata.artworkUri != null }?.mediaMetadata?.artworkUri
             if (art == null) node
             else node.buildUpon().setMediaMetadata(node.mediaMetadata.buildUpon().setArtworkUri(art).build()).build()
         }, MoreExecutors.directExecutor())
-        // Se una sezione non risponde il riquadro resta, senza copertina
-        return Futures.catching(withArt, Throwable::class.java, { node }, MoreExecutors.directExecutor())
+        // Sezione vuota o in errore (es. nessun preferito): niente riquadro col triangolo di avviso
+        return Futures.catching(withArt, Throwable::class.java, { null }, MoreExecutors.directExecutor())
     }
 
     fun getChildren(
