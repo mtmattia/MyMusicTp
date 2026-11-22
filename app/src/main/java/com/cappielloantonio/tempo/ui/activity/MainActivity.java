@@ -38,6 +38,8 @@ import com.cappielloantonio.tempo.util.ConnectivityStatusMonitor;
 import com.cappielloantonio.tempo.util.Constants;
 import com.cappielloantonio.tempo.util.Preferences;
 import com.cappielloantonio.tempo.viewmodel.MainViewModel;
+import com.cappielloantonio.tempo.subsonic.models.Child;
+import com.cappielloantonio.tempo.viewmodel.PlayerBottomSheetViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.color.DynamicColors;
@@ -325,6 +327,9 @@ public class MainActivity extends BaseActivity {
     public void goFromLogin() {
         setBottomSheetInPeek(mainViewModel.isQueueLoaded());
         goToHome();
+        // After a (re)login the OpenSubsonic flag was reset and only refreshed on the next
+        // app restart, so synced lyrics disappeared until then.
+        pingServer();
     }
 
     public void quit() {
@@ -430,6 +435,10 @@ public class MainActivity extends BaseActivity {
             if (subsonicResponse != null) {
                 pingInProgress = false;
                 Preferences.setOpenSubsonic(subsonicResponse.getOpenSubsonic() != null && subsonicResponse.getOpenSubsonic());
+                // Extensions (e.g. songLyrics = synced lyrics) must come from the server that
+                // actually answered: at startup the first request could hit an unreachable
+                // address and leave them stale or missing.
+                getOpenSubsonicExtensions();
                 return;
             }
 
@@ -470,6 +479,12 @@ public class MainActivity extends BaseActivity {
             mainViewModel.getOpenSubsonicExtensions().observe(this, openSubsonicExtensions -> {
                 if (openSubsonicExtensions != null) {
                     Preferences.setOpenSubsonicExtensions(openSubsonicExtensions);
+
+                    // Lyrics of the current track may have been loaded as plain text before
+                    // the extensions were known: reload them (no-op if already synced).
+                    PlayerBottomSheetViewModel playerViewModel = new ViewModelProvider(this).get(PlayerBottomSheetViewModel.class);
+                    Child media = playerViewModel.getLiveMedia().getValue();
+                    if (media != null) playerViewModel.refreshMediaInfo(this, media);
                 }
             });
         }
