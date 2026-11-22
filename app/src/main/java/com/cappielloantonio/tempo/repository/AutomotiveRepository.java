@@ -36,6 +36,7 @@ import com.cappielloantonio.tempo.subsonic.models.Playlist;
 import com.cappielloantonio.tempo.subsonic.models.PodcastEpisode;
 import com.cappielloantonio.tempo.util.DownloadUtil;
 import com.cappielloantonio.tempo.util.MappingUtil;
+import com.cappielloantonio.tempo.util.SmartMix;
 import com.cappielloantonio.tempo.util.MusicUtil;
 import com.cappielloantonio.tempo.util.Preferences;
 import com.google.common.collect.ImmutableList;
@@ -763,28 +764,48 @@ public class AutomotiveRepository {
         return listenableFuture;
     }
 
-    public ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> getMadeForYou(String id, int count) {
+    /**
+     * "Fatto per te" in Android Auto, come nell'app: un mix per ogni brano preferito.
+     * Senza preferiti restituisce una lista vuota (prima era un errore e la sezione non si apriva).
+     */
+    public ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> getMadeForYouSeeds(String prefix, int max) {
         final SettableFuture<LibraryResult<ImmutableList<MediaItem>>> listenableFuture = SettableFuture.create();
 
         App.getSubsonicClientInstance(false)
-                .getBrowsingClient()
-                .getSimilarSongs2(id, count)
+                .getAlbumSongListClient()
+                .getStarred2()
                 .enqueue(new Callback<ApiResponse>() {
                     @Override
                     public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
-                        if (response.isSuccessful() && response.body() != null && response.body().getSubsonicResponse().getSimilarSongs2() != null && response.body().getSubsonicResponse().getSimilarSongs2().getSongs() != null) {
-                            List<Child> tracks = response.body().getSubsonicResponse().getSimilarSongs2().getSongs();
+                        List<Child> songs = response.isSuccessful() && response.body() != null
+                                && response.body().getSubsonicResponse().getStarred2() != null
+                                && response.body().getSubsonicResponse().getStarred2().getSongs() != null
+                                ? new ArrayList<>(response.body().getSubsonicResponse().getStarred2().getSongs())
+                                : new ArrayList<>();
 
-                            setChildrenMetadata(tracks);
+                        Collections.shuffle(songs);
+                        List<MediaItem> mediaItems = new ArrayList<>();
 
-                            List<MediaItem> mediaItems = MappingUtil.mapMediaItems(tracks);
+                        for (Child song : songs.subList(0, Math.min(max, songs.size()))) {
+                            Uri artworkUri = Uri.parse(CustomGlideRequest.createUrl(song.getCoverArtId(), Preferences.getImageSize()));
 
-                            LibraryResult<ImmutableList<MediaItem>> libraryResult = LibraryResult.ofItemList(ImmutableList.copyOf(mediaItems), null);
+                            MediaMetadata mediaMetadata = new MediaMetadata.Builder()
+                                    .setTitle(song.getTitle())
+                                    .setArtist(song.getArtist())
+                                    .setIsBrowsable(true)
+                                    .setIsPlayable(false)
+                                    .setMediaType(MediaMetadata.MEDIA_TYPE_PLAYLIST)
+                                    .setArtworkUri(artworkUri)
+                                    .build();
 
-                            listenableFuture.set(libraryResult);
-                        } else {
-                            listenableFuture.set(LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE));
+                            mediaItems.add(new MediaItem.Builder()
+                                    .setMediaId(prefix + song.getId())
+                                    .setMediaMetadata(mediaMetadata)
+                                    .setUri("")
+                                    .build());
                         }
+
+                        listenableFuture.set(LibraryResult.ofItemList(ImmutableList.copyOf(mediaItems), null));
                     }
 
                     @Override
@@ -792,6 +813,20 @@ public class AutomotiveRepository {
                         listenableFuture.setException(t);
                     }
                 });
+
+        return listenableFuture;
+    }
+
+    /** Mix a partire da un brano: stesso SmartMix del pulsante "mix istantaneo" del player. */
+    public ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> getMadeForYou(String id, int count) {
+        final SettableFuture<LibraryResult<ImmutableList<MediaItem>>> listenableFuture = SettableFuture.create();
+
+        SmartMix.fromSongId(id, count, songs -> {
+            List<Child> tracks = songs != null ? songs : new ArrayList<>();
+            setChildrenMetadata(tracks);
+            List<MediaItem> mediaItems = MappingUtil.mapMediaItems(tracks);
+            listenableFuture.set(LibraryResult.ofItemList(ImmutableList.copyOf(mediaItems), null));
+        });
 
         return listenableFuture;
     }
