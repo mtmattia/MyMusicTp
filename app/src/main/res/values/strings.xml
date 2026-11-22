@@ -433,4 +433,8 @@
     <string name="auto_playlists">Playlists</string>
     <string name="auto_podcasts">Podcasts</string>
     <string name="auto_radio">Radio stations</string>
+    <string name="auto_albums">Albums</string>
+    <string name="auto_artists">Artists</string>
+    <string name="auto_genres">Genres</string>
+    <string name="auto_years">Years</string>
 </resources>
