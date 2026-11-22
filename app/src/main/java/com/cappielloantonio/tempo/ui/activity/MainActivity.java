@@ -291,6 +291,67 @@ public class MainActivity extends BaseActivity {
         });
     }
 
+    // Trascinamento orizzontale sulla barra in basso: muove Home / Libreria / Download
+    private float navDownX;
+    private float navLastX;
+    private boolean navTracking = false;
+    private boolean navDragging = false;
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
+        if (bottomNavigationView == null || mainPager == null || bottomNavigationView.getVisibility() != View.VISIBLE
+                || navController == null || navController.getCurrentDestination() == null
+                || navController.getCurrentDestination().getId() != R.id.homeFragment) {
+            return super.dispatchTouchEvent(ev);
+        }
+
+        switch (ev.getActionMasked()) {
+            case android.view.MotionEvent.ACTION_DOWN: {
+                int[] loc = new int[2];
+                bottomNavigationView.getLocationOnScreen(loc);
+                navTracking = ev.getRawY() >= loc[1] && ev.getRawY() <= loc[1] + bottomNavigationView.getHeight();
+                navDragging = false;
+                navDownX = navLastX = ev.getRawX();
+                break;
+            }
+            case android.view.MotionEvent.ACTION_MOVE: {
+                if (!navTracking) break;
+                float x = ev.getRawX();
+                if (!navDragging) {
+                    int slop = android.view.ViewConfiguration.get(this).getScaledTouchSlop();
+                    if (Math.abs(x - navDownX) > slop && mainPager.beginDrag()) {
+                        navDragging = true;
+                        navLastX = x;
+                        // Il tocco diventa un trascinamento: annulla il tocco sui pulsanti
+                        android.view.MotionEvent cancel = android.view.MotionEvent.obtain(ev);
+                        cancel.setAction(android.view.MotionEvent.ACTION_CANCEL);
+                        super.dispatchTouchEvent(cancel);
+                        cancel.recycle();
+                    }
+                }
+                if (navDragging) {
+                    float itemWidth = bottomNavigationView.getWidth() / 3f;
+                    mainPager.dragBy(x - navLastX, itemWidth);
+                    navLastX = x;
+                    return true;
+                }
+                break;
+            }
+            case android.view.MotionEvent.ACTION_UP:
+            case android.view.MotionEvent.ACTION_CANCEL: {
+                boolean wasDragging = navDragging;
+                navTracking = false;
+                navDragging = false;
+                if (wasDragging) {
+                    mainPager.endDrag();
+                    return true;
+                }
+                break;
+            }
+        }
+        return super.dispatchTouchEvent(ev);
+    }
+
     private com.cappielloantonio.tempo.ui.fragment.MainPagerFragment mainPager;
     private boolean selectingFromPager = false;
 

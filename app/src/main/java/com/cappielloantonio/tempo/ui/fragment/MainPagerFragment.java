@@ -75,6 +75,8 @@ public class MainPagerFragment extends Fragment {
             }
         });
         bind.mainPager.setOffscreenPageLimit(2);
+        // Si scorre solo trascinando sulla barra in basso (vedi MainActivity.dispatchTouchEvent)
+        bind.mainPager.setUserInputEnabled(false);
         // Dopo il ripristino dello stato ViewPager2 torna alla pagina salvata: la pagina scelta
         // dalla barra in basso (o l'ultima vista) va impostata dopo
         final int target = pendingPage >= 0 ? pendingPage : lastPage;
@@ -153,6 +155,22 @@ public class MainPagerFragment extends Fragment {
         }
         float shift = position >= PAGE_DOWNLOAD ? width : position == PAGE_LIBRARY ? offset * width : 0f;
         bar.setTranslationX(-shift);
+    }
+
+    // ---- Trascinamento dalla barra in basso: le pagine seguono il dito ----
+
+    public boolean beginDrag() {
+        return bind != null && bind.mainPager.beginFakeDrag();
+    }
+
+    /** dx in pixel sulla barra; uno spostamento di una voce della barra vale una pagina. */
+    public void dragBy(float dx, float itemWidth) {
+        if (bind == null || !bind.mainPager.isFakeDragging() || itemWidth <= 0) return;
+        bind.mainPager.fakeDragBy(-dx * bind.mainPager.getWidth() / itemWidth);
+    }
+
+    public void endDrag() {
+        if (bind != null && bind.mainPager.isFakeDragging()) bind.mainPager.endFakeDrag();
     }
 
     /** Dalla barra in basso: scorre alla sezione con l'animazione. */
