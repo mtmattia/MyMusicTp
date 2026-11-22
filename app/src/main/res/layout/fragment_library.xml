@@ -24,6 +24,40 @@
             android:orientation="vertical"
             android:paddingBottom="@dimen/global_padding_bottom">
 
+            <!--  Downloads (moved here from the bottom bar)  -->
+            <LinearLayout
+                android:id="@+id/library_downloads_tile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/bg_glass_tile"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="10dp">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_tile_icon_recent"
+                    android:importantForAccessibility="no"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_download"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    style="@style/TitleMedium"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:text="@string/library_downloads"
+                    android:textColor="@color/titleTextColor" />
+            </LinearLayout>
+
             <!--  Music Folder  -->
             <LinearLayout
                 android:id="@+id/library_music_folder_sector"
