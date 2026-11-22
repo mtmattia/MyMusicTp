@@ -140,6 +140,7 @@
 	<string name="home_title_starred_tracks_see_all_button">Vedi tutto</string>
 	<string name="home_title_top_songs">I tuoi migliori brani</string>
 	<string name="home_tile_shuffle">Casuale</string>
+	<string name="home_carousel_play_all">Riproduci tutto</string>
 	<string name="home_tile_starred">Preferiti</string>
 	<string name="home_tile_recent">Recenti</string>
 	<string name="home_tile_most_played">Più ascoltati</string>

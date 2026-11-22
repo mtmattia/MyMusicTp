@@ -730,150 +730,110 @@
                 android:paddingBottom="8dp" />
         </LinearLayout>
 
-        <!--  Quick tiles (shuffle & shortcuts), shown right below "Recently added"  -->
+        <!--  Shuffle & Favorites carousels, shown right below "Recently added".
+              A new random pick on every visit; the queue plays exactly what is shown.  -->
         <LinearLayout
             android:id="@+id/home_shuffle_sector"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingHorizontal="16dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="12dp">
+            android:orientation="vertical">
 
             <LinearLayout
-                android:id="@+id/home_tile_shuffle"
-                android:layout_width="0dp"
+                android:id="@+id/home_shuffle_carousel_sector"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_glass_tile"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_horizontal"
                 android:orientation="vertical"
-                android:paddingHorizontal="4dp"
-                android:paddingVertical="12dp">
+                android:visibility="gone"
+                tools:visibility="visible">
 
-                <ImageView
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@drawable/bg_tile_icon_shuffle"
-                    android:importantForAccessibility="no"
-                    android:padding="11dp"
-                    android:src="@drawable/ic_shuffle"
-                    app:tint="#FFFFFF" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="8dp">
 
                 <TextView
-                    style="@style/LabelSmall"
+                    style="@style/TitleLarge"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:text="@string/home_tile_shuffle" />
+
+                <TextView
+                    android:id="@+id/home_shuffle_carousel_play_all"
+                    style="@style/HomeSectionAction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="@string/home_tile_shuffle"
-                    android:textColor="@color/titleTextColor" />
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:text="@string/home_carousel_play_all" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/home_shuffle_carousel_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:clipToPadding="false"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="8dp" />
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/home_tile_starred"
-                android:layout_width="0dp"
+                android:id="@+id/home_starred_carousel_sector"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_glass_tile"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_horizontal"
                 android:orientation="vertical"
-                android:paddingHorizontal="4dp"
-                android:paddingVertical="12dp">
-
-                <ImageView
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@drawable/bg_tile_icon_favorite"
-                    android:importantForAccessibility="no"
-                    android:padding="11dp"
-                    android:src="@drawable/ic_favorite"
-                    app:tint="#FFFFFF" />
-
-                <TextView
-                    style="@style/LabelSmall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="@string/home_tile_starred"
-                    android:textColor="@color/titleTextColor" />
-            </LinearLayout>
+                android:visibility="gone"
+                tools:visibility="visible">
 
             <LinearLayout
-                android:id="@+id/home_tile_recent"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_glass_tile"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_horizontal"
-                android:orientation="vertical"
-                android:paddingHorizontal="4dp"
-                android:paddingVertical="12dp">
-
-                <ImageView
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@drawable/bg_tile_icon_recent"
-                    android:importantForAccessibility="no"
-                    android:padding="11dp"
-                    android:src="@drawable/ic_history"
-                    app:tint="#FFFFFF" />
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="8dp">
 
                 <TextView
-                    style="@style/LabelSmall"
+                    style="@style/TitleLarge"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:text="@string/home_tile_starred" />
+
+                <TextView
+                    android:id="@+id/home_starred_carousel_play_all"
+                    style="@style/HomeSectionAction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="@string/home_tile_recent"
-                    android:textColor="@color/titleTextColor" />
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:text="@string/home_carousel_play_all" />
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/home_tile_most_played"
-                android:layout_width="0dp"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/home_starred_carousel_recycler_view"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                
-                android:background="@drawable/bg_glass_tile"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_horizontal"
-                android:orientation="vertical"
-                android:paddingHorizontal="4dp"
-                android:paddingVertical="12dp">
-
-                <ImageView
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:background="@drawable/bg_tile_icon_most"
-                    android:importantForAccessibility="no"
-                    android:padding="11dp"
-                    android:src="@drawable/ic_graphic_eq"
-                    app:tint="#FFFFFF" />
-
-                <TextView
-                    style="@style/LabelSmall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="@string/home_tile_most_played"
-                    android:textColor="@color/titleTextColor" />
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:clipToPadding="false"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="8dp" />
             </LinearLayout>
         </LinearLayout>
 

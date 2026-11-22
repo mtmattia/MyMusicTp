@@ -21,9 +21,16 @@ public class SimilarTrackAdapter extends RecyclerView.Adapter<SimilarTrackAdapte
     private final ClickCallback click;
 
     private List<Child> songs;
+    /** true: a tap plays exactly the listed songs from that one, instead of an instant mix. */
+    private final boolean playListOnClick;
 
     public SimilarTrackAdapter(ClickCallback click) {
+        this(click, false);
+    }
+
+    public SimilarTrackAdapter(ClickCallback click, boolean playListOnClick) {
         this.click = click;
+        this.playListOnClick = playListOnClick;
         this.songs = Collections.emptyList();
     }
 
@@ -74,6 +81,12 @@ public class SimilarTrackAdapter extends RecyclerView.Adapter<SimilarTrackAdapte
 
         public void onClick() {
             Bundle bundle = new Bundle();
+            if (playListOnClick) {
+                bundle.putParcelableArrayList(Constants.TRACKS_OBJECT, new java.util.ArrayList<>(songs));
+                bundle.putInt(Constants.ITEM_POSITION, getBindingAdapterPosition());
+                click.onMediaClick(bundle);
+                return;
+            }
             bundle.putParcelable(Constants.TRACK_OBJECT, songs.get(getBindingAdapterPosition()));
             bundle.putBoolean(Constants.MEDIA_MIX, true);
 
