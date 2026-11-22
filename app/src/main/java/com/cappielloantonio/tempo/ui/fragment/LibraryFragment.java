@@ -27,6 +27,7 @@ import com.cappielloantonio.tempo.ui.adapter.ArtistAdapter;
 import com.cappielloantonio.tempo.ui.adapter.GenreAdapter;
 import com.cappielloantonio.tempo.ui.adapter.MusicFolderAdapter;
 import com.cappielloantonio.tempo.ui.adapter.PlaylistHorizontalAdapter;
+import com.cappielloantonio.tempo.ui.adapter.YearAdapter;
 import com.cappielloantonio.tempo.ui.dialog.PlaylistEditorDialog;
 import com.cappielloantonio.tempo.util.Constants;
 import com.cappielloantonio.tempo.util.Preferences;
@@ -96,6 +97,8 @@ public class LibraryFragment extends Fragment implements ClickCallback {
     }
 
     private void init() {
+        bind.librarySearchBar.setOnClickListener(v -> activity.navController.navigate(R.id.action_libraryFragment_to_searchFragment));
+        initYearsView();
         bind.albumCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.action_libraryFragment_to_albumCatalogueFragment));
         bind.artistCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.action_libraryFragment_to_artistCatalogueFragment));
         bind.genreCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.action_libraryFragment_to_genreCatalogueFragment));
@@ -121,6 +124,24 @@ public class LibraryFragment extends Fragment implements ClickCallback {
             libraryViewModel.refreshPlaylistSample(getViewLifecycleOwner());
             return true;
         });
+    }
+
+    private void initYearsView() {
+        bind.libraryYearsRecyclerView.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false));
+        bind.libraryYearsRecyclerView.setHasFixedSize(true);
+
+        YearAdapter yearAdapter = new YearAdapter(this);
+        bind.libraryYearsRecyclerView.setAdapter(yearAdapter);
+        libraryViewModel.getDecades(getViewLifecycleOwner()).observe(getViewLifecycleOwner(), years -> {
+            if (bind == null) return;
+            bind.libraryYearsSector.setVisibility(years != null && !years.isEmpty() ? View.VISIBLE : View.GONE);
+            if (years != null) yearAdapter.setItems(years);
+        });
+    }
+
+    @Override
+    public void onYearClick(Bundle bundle) {
+        Navigation.findNavController(requireView()).navigate(R.id.songListPageFragment, bundle);
     }
 
     private void initAppBar() {
