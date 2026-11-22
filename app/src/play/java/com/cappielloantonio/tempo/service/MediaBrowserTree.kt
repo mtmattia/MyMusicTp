@@ -452,7 +452,14 @@ object MediaBrowserTree {
             val title = node.mediaMetadata.title?.toString() ?: ""
             val art = AutoTileArtwork.render(App.getContext(), id, title, cover) ?: cover
             if (art == null) node
-            else node.buildUpon().setMediaMetadata(node.mediaMetadata.buildUpon().setArtworkUri(art).build()).build()
+            else node.buildUpon().setMediaMetadata(
+                node.mediaMetadata.buildUpon()
+                    .setArtworkUri(art)
+                    // Il nome è già scritto sulla copertina: niente didascalia sotto il riquadro
+                    .setTitle(" ")
+                    .setDisplayTitle(" ")
+                    .build()
+            ).build()
         }, tileExecutor)
         // Sezione vuota o in errore (es. nessun preferito): niente riquadro col triangolo di avviso
         return Futures.catching(withArt, Throwable::class.java, { null }, MoreExecutors.directExecutor())
