@@ -51,6 +51,7 @@ object MediaBrowserTree {
     private const val STARRED_ALBUMS_ID = "[starredAlbumsID]"
     private const val STARRED_ARTISTS_ID = "[starredArtistsID]"
     private const val RANDOM_ID = "[randomID]"
+    private const val DISCOVERY_ID = "[discoveryID]"
 
     // Second level LIBRARY_ID
     private const val FOLDER_ID = "[folderID]"
@@ -295,6 +296,21 @@ object MediaBrowserTree {
         treeNodes[HOME_ID]!!.addChild(LAST_PLAYED_ID)
         treeNodes[HOME_ID]!!.addChild(RECENTLY_ADDED_ID)
         treeNodes[HOME_ID]!!.addChild(RECENT_SONGS_ID)
+        treeNodes[DISCOVERY_ID] =
+            MediaItemNode(
+                buildMediaItem(
+                    title = t(R.string.home_title_discovery),
+                    mediaId = DISCOVERY_ID,
+                    isPlayable = false,
+                    isBrowsable = true,
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
+                ).let { item ->
+                    // Come "Scoperta" nell'app: brani casuali a copertine grandi
+                    val extras = Bundle().apply { putInt(CONTENT_STYLE_PLAYABLE_HINT, CONTENT_STYLE_GRID) }
+                    item.buildUpon().setMediaMetadata(item.mediaMetadata.buildUpon().setExtras(extras).build()).build()
+                }
+            )
+
         treeNodes[HOME_ID]!!.addChild(MADE_FOR_YOU_ID)
         treeNodes[HOME_ID]!!.addChild(STARRED_TRACKS_ID)
         treeNodes[HOME_ID]!!.addChild(STARRED_ALBUMS_ID)
@@ -368,6 +384,7 @@ object MediaBrowserTree {
      */
     private fun homeSections(): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
         val tiles = listOf(
+            tile(DISCOVERY_ID, automotiveRepository.getRandomSongs(1)),
             tile(LAST_PLAYED_ID, automotiveRepository.getAlbums(LAST_PLAYED_ID, "recent", 1)),
             tile(MADE_FOR_YOU_ID, automotiveRepository.getMadeForYouSeeds(MADE_FOR_YOU_ID, 1)),
             tile(RECENTLY_ADDED_ID, automotiveRepository.getAlbums(RECENTLY_ADDED_ID, "newest", 1)),
@@ -376,7 +393,6 @@ object MediaBrowserTree {
             tile(STARRED_ALBUMS_ID, automotiveRepository.getStarredAlbums(STARRED_ALBUMS_ID)),
             tile(STARRED_ARTISTS_ID, automotiveRepository.getStarredArtists(STARRED_ARTISTS_ID)),
             tile(RECENT_SONGS_ID, automotiveRepository.getRecentlyPlayedSongs(getServerId(), 1)),
-            tile(RANDOM_ID, automotiveRepository.getRandomSongs(1))
         )
 
         return Futures.transform(Futures.allAsList(tiles), { items ->
@@ -418,6 +434,7 @@ object MediaBrowserTree {
             STARRED_ALBUMS_ID -> automotiveRepository.getStarredAlbums(id)
             STARRED_ARTISTS_ID -> automotiveRepository.getStarredArtists(id)
             RANDOM_ID -> automotiveRepository.getRandomSongs(100)
+            DISCOVERY_ID -> automotiveRepository.getRandomSongs(20)
             FOLDER_ID -> automotiveRepository.getMusicFolders(id)
             PLAYLIST_ID -> automotiveRepository.getPlaylists(id)
             PODCAST_ID -> automotiveRepository.getNewestPodcastEpisodes(100)
