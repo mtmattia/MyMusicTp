@@ -120,8 +120,11 @@ public class AudioWaveView extends View {
         live += (target - live) * Math.min(1f, dt * k);
         phase += dt * (3f + live * 6f);
 
-        float fraction = progressFraction(p);
-        int head = Math.min(count - 1, (int) (fraction * count));
+        // Continuous playhead position (in bars): everything below moves with it smoothly,
+        // so a new bar grows in instead of popping and the tail doesn't jump by one bar.
+        float headF = Math.min(count - 0.001f, progressFraction(p) * count);
+        int head = (int) headF;
+        float reveal = smooth(headF - head);
 
         // Record what is heard now at the playhead; fill gaps left by seeking with a per-song pattern
         if (playing) history[head] = history[head] == 0f ? live : history[head] * 0.7f + live * 0.3f;
@@ -134,24 +137,36 @@ public class AudioWaveView extends View {
 
         for (int i = 0; i <= head; i++) {
             float v = Math.max(0.08f, Math.min(1f, history[i]));
-            int fromHead = head - i;
-            if (fromHead < TAIL) {
-                // Wave tail: the latest bars breathe with the live level
-                float wave = (float) Math.sin(phase - fromHead * 0.9f);
-                v = Math.min(1f, v * (1f + 0.45f * wave * live) + live * 0.25f * (1f - fromHead / (float) TAIL));
-            }
+            float fromHead = headF - i - 0.5f; // continuous distance from the playhead
+            // A wave travels along every played bar, driven by the live level;
+            // the bars right behind the playhead also swell a bit more.
+            float d = Math.max(0f, fromHead);
+            float wave = (float) Math.sin(phase - d * 0.55f);
+            float near = Math.max(0f, 1f - d / TAIL);
+            v = Math.max(0.06f, Math.min(1f, v * (1f + 0.4f * wave * (0.25f + live)) + live * 0.25f * near));
             float bh = minH + (maxH - minH) * v;
+            float alphaScale = 1f;
+            if (i == head) {
+                // Newest bar grows in as the playhead crosses it
+                bh = minH + (bh - minH) * reveal;
+                alphaScale = 0.35f + 0.65f * reveal;
+            }
             float x = i * (barWidth + gap);
             rect.set(x, mid - bh / 2f, x + barWidth, mid + bh / 2f);
 
             // Older bars slightly softer, newest fully opaque
-            float age = Math.min(1f, fromHead / 40f);
-            barPaint.setColor(ColorUtils.setAlphaComponent(tint, (int) (255 * (1f - 0.35f * age))));
+            float age = Math.min(1f, Math.max(0f, fromHead) / 40f);
+            barPaint.setColor(ColorUtils.setAlphaComponent(tint, (int) (255 * alphaScale * (1f - 0.35f * age))));
             canvas.drawRoundRect(rect, barWidth / 2f, barWidth / 2f, barPaint);
         }
 
         if (playing || live > 0.005f) postInvalidateOnAnimation();
         else lastFrameNs = 0;
+    }
+
+    private static float smooth(float t) {
+        t = Math.max(0f, Math.min(1f, t));
+        return t * t * (3f - 2f * t);
     }
 
     private static void fillGaps(float[] history, int head, String key) {
