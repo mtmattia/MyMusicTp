@@ -89,7 +89,12 @@ public class PlayerBottomSheetFragment extends Fragment {
     }
 
     private void customizeBottomSheetBackground() {
-        bind.playerHeaderLayout.getRoot().setBackgroundColor(SurfaceColors.getColorForElevation(requireContext(), 8));
+        int base = SurfaceColors.getColorForElevation(requireContext(), 8);
+        View header = bind.playerHeaderLayout.getRoot();
+        header.setBackground(CoverPaletteUtil.glassDrawable(requireContext(), base, 20));
+        header.setClipToOutline(true);
+        // Collapsed: only the floating glass pill shows, not the full player behind it
+        bind.playerBodyLayout.getRoot().setAlpha(((MainActivity) requireActivity()).isBottomSheetExpanded() ? 1f : 0f);
     }
 
     private void customizeBottomSheetAction() {
@@ -178,9 +183,9 @@ public class PlayerBottomSheetFragment extends Fragment {
                 if (bind == null) return;
                 int dock = androidx.core.graphics.ColorUtils.blendARGB(background,
                         SurfaceColors.getColorForElevation(requireContext(), 8), 0.35f);
-                bind.playerHeaderLayout.getRoot().setBackgroundColor(dock);
+                bind.playerHeaderLayout.getRoot().setBackground(CoverPaletteUtil.glassDrawable(requireContext(), dock, 20));
                 View nav = requireActivity().findViewById(R.id.bottom_navigation);
-                if (nav != null) nav.setBackgroundColor(dock);
+                if (nav != null) nav.setBackground(CoverPaletteUtil.glassDrawable(requireContext(), dock, 32));
             });
 
             bind.playerHeaderLayout.playerHeaderMediaTitleLabel.setVisibility(mediaMetadata.extras.getString("title") != null && !Objects.equals(mediaMetadata.extras.getString("title"), "") ? View.VISIBLE : View.GONE);
@@ -230,6 +235,10 @@ public class PlayerBottomSheetFragment extends Fragment {
     private void setHeaderNextButtonState(boolean isEnabled) {
         bind.playerHeaderLayout.playerHeaderNextMediaButton.setEnabled(isEnabled);
         bind.playerHeaderLayout.playerHeaderNextMediaButton.setAlpha(isEnabled ? (float) 1.0 : (float) 0.3);
+    }
+
+    public View getPlayerBody() {
+        return bind != null ? bind.playerBodyLayout.getRoot() : null;
     }
 
     public View getPlayerHeader() {

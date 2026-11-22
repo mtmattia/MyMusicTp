@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.view.View;
 
 import androidx.annotation.ColorInt;
@@ -92,6 +93,26 @@ public final class CoverPaletteUtil {
      * App-wide theme: the whole window behind every screen takes the colors of
      * the cover that is playing, plus the status bar.
      */
+    /**
+     * "Liquid glass" surface: translucent tinted fill, soft top sheen, thin light rim.
+     * (Android can't blur what lies behind a view, so translucency stands in for it.)
+     */
+    public static Drawable glassDrawable(@NonNull Context context, @ColorInt int color, float radiusDp) {
+        float density = context.getResources().getDisplayMetrics().density;
+        float radius = radiusDp * density;
+
+        GradientDrawable fill = new GradientDrawable();
+        fill.setCornerRadius(radius);
+        fill.setColor(ColorUtils.setAlphaComponent(color, 0xD9));
+        fill.setStroke(Math.max(1, Math.round(density)), Color.argb(0x38, 255, 255, 255));
+
+        GradientDrawable sheen = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{Color.argb(0x22, 255, 255, 255), Color.argb(0x00, 255, 255, 255)});
+        sheen.setCornerRadius(radius);
+
+        return new LayerDrawable(new Drawable[]{fill, sheen});
+    }
+
     public static void applyAppTheme(@NonNull Fragment fragment, @Nullable String coverArtId, View... extraGradientTargets) {
         Activity activity = fragment.getActivity();
         if (activity == null) return;

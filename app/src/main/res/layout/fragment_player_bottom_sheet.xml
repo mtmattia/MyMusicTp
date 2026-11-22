@@ -12,5 +12,7 @@
         android:id="@+id/player_header_layout"
         layout="@layout/player_header_bottom_sheet"
         android:layout_width="match_parent"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
         android:layout_height="@dimen/bottom_sheet_peek_height" />
 </FrameLayout>

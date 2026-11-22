@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -165,6 +166,10 @@ public class MainActivity extends BaseActivity {
         handler.postDelayed(runnable, 100);
     }
 
+    public boolean isBottomSheetExpanded() {
+        return bottomSheetBehavior != null && bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED;
+    }
+
     public void expandBottomSheet() {
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
     }
@@ -186,11 +191,15 @@ public class MainActivity extends BaseActivity {
                             resetMusicSession();
                             break;
                         case BottomSheetBehavior.STATE_COLLAPSED:
-                            if (playerBottomSheetFragment != null)
+                            if (playerBottomSheetFragment != null) {
                                 playerBottomSheetFragment.goBackToFirstPage();
+                                setPlayerBodyAlpha(playerBottomSheetFragment, 0f);
+                            }
+                            break;
+                        case BottomSheetBehavior.STATE_EXPANDED:
+                            setPlayerBodyAlpha(playerBottomSheetFragment, 1f);
                             break;
                         case BottomSheetBehavior.STATE_SETTLING:
-                        case BottomSheetBehavior.STATE_EXPANDED:
                         case BottomSheetBehavior.STATE_DRAGGING:
                         case BottomSheetBehavior.STATE_HALF_EXPANDED:
                             break;
@@ -210,14 +219,25 @@ public class MainActivity extends BaseActivity {
             float condensedSlideOffset = Math.max(0.0f, Math.min(0.2f, slideOffset - 0.2f)) / 0.2f;
             playerBottomSheetFragment.getPlayerHeader().setAlpha(1 - condensedSlideOffset);
             playerBottomSheetFragment.getPlayerHeader().setVisibility(condensedSlideOffset > 0.99 ? View.GONE : View.VISIBLE);
+            setPlayerBodyAlpha(playerBottomSheetFragment, Math.max(0f, Math.min(1f, slideOffset * 3f)));
         }
+    }
+
+    private void setPlayerBodyAlpha(PlayerBottomSheetFragment fragment, float alpha) {
+        if (fragment == null) return;
+        View body = fragment.getPlayerBody();
+        if (body != null) body.setAlpha(alpha);
     }
 
     private void animateBottomNavigation(float slideOffset, int navigationHeight) {
         if (slideOffset < 0) return;
 
         if (navigationHeight == 0) {
+            // Floating nav: slide it out by its height plus the bottom margin
             navigationHeight = bind.bottomNavigation.getHeight();
+            ViewGroup.LayoutParams lp = bind.bottomNavigation.getLayoutParams();
+            if (lp instanceof ViewGroup.MarginLayoutParams)
+                navigationHeight += ((ViewGroup.MarginLayoutParams) lp).bottomMargin;
         }
 
         float slideY = navigationHeight - navigationHeight * (1 - slideOffset);
@@ -227,6 +247,8 @@ public class MainActivity extends BaseActivity {
 
     private void initNavigation() {
         bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bottomNavigationView.setBackground(com.cappielloantonio.tempo.util.CoverPaletteUtil.glassDrawable(
+                this, com.google.android.material.elevation.SurfaceColors.getColorForElevation(this, 8), 32));
         navHostFragment = (NavHostFragment) fragmentManager.findFragmentById(R.id.nav_host_fragment);
         navController = Objects.requireNonNull(navHostFragment).getNavController();
 
