@@ -433,4 +433,15 @@
     <string name="auto_playlists">Playlists</string>
     <string name="auto_podcasts">Podcasts</string>
     <string name="auto_radio">Radio stations</string>
+    <string name="settings_auto_update_title">Automatic updates</string>
+    <string name="settings_auto_update_summary">Download new versions from GitHub Releases and ask to install them</string>
+    <string name="settings_check_update_title">Check for updates</string>
+    <string name="settings_check_update_summary">Look for a new version on GitHub now</string>
+    <string name="app_update_none">You already have the latest version</string>
+    <string name="app_update_check_failed">Could not check for updates</string>
+    <string name="app_update_downloading">Downloading update %1$s…</string>
+    <string name="app_update_download_failed">Update download failed</string>
+    <string name="app_update_bad_signature">Update rejected: the signature does not match the installed app</string>
+    <string name="app_update_allow_install">Allow Tempo to install apps, then go back: the update will continue</string>
+    <string name="app_update_install_failed">Update installation failed</string>
 </resources>

@@ -334,6 +334,17 @@
             app:selectable="false"
             app:summary="@string/settings_about_summary" />
 
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="auto_update"
+            app:summary="@string/settings_auto_update_summary"
+            app:title="@string/settings_auto_update_title" />
+
+        <Preference
+            android:key="check_update"
+            app:summary="@string/settings_check_update_summary"
+            app:title="@string/settings_check_update_title" />
+
         <Preference
             android:key="version"
             app:summary="@string/settings_version_summary"

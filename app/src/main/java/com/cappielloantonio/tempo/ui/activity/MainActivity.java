@@ -26,6 +26,7 @@ import com.cappielloantonio.tempo.App;
 import com.cappielloantonio.tempo.BuildConfig;
 import com.cappielloantonio.tempo.R;
 import com.cappielloantonio.tempo.databinding.ActivityMainBinding;
+import com.cappielloantonio.tempo.github.utils.AppUpdater;
 import com.cappielloantonio.tempo.github.utils.UpdateUtil;
 import com.cappielloantonio.tempo.service.MediaManager;
 import com.cappielloantonio.tempo.ui.activity.base.BaseActivity;
@@ -97,6 +98,7 @@ public class MainActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
         pingServer();
+        AppUpdater.resumePendingInstall(this);
     }
 
     @Override
@@ -491,7 +493,15 @@ public class MainActivity extends BaseActivity {
     }
 
     private void checkTempoUpdate() {
-        if (BuildConfig.FLAVOR.equals("tempo") && Preferences.showTempoUpdateDialog()) {
+        if (!AppUpdater.isSupported()) return;
+
+        if (Preferences.isAutoUpdateEnabled()) {
+            // Scarica da solo; Android chiede comunque conferma prima di installare.
+            AppUpdater.checkAndInstall(this, false);
+            return;
+        }
+
+        if (Preferences.showTempoUpdateDialog()) {
             mainViewModel.checkTempoUpdate().observe(this, latestRelease -> {
                 if (latestRelease != null && UpdateUtil.showUpdateDialog(latestRelease)) {
                     GithubTempoUpdateDialog dialog = new GithubTempoUpdateDialog(latestRelease);

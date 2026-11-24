@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
+import com.cappielloantonio.tempo.github.utils.AppUpdater;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -91,6 +92,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         setStreamingCacheSize();
         setAppLanguage();
         setVersion();
+        setupAppUpdate();
 
         actionLogout();
         actionScan();
@@ -213,6 +215,20 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
     private void setVersion() {
         findPreference("version").setSummary(BuildConfig.VERSION_NAME);
+    }
+
+    private void setupAppUpdate() {
+        Preference auto = findPreference(Preferences.AUTO_UPDATE);
+        Preference check = findPreference("check_update");
+        boolean supported = AppUpdater.isSupported();
+        if (auto != null) auto.setVisible(supported);
+        if (check != null) {
+            check.setVisible(supported);
+            check.setOnPreferenceClickListener(preference -> {
+                AppUpdater.checkAndInstall(requireActivity(), true);
+                return true;
+            });
+        }
     }
 
     private void actionLogout() {

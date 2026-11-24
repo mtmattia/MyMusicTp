@@ -62,6 +62,7 @@ object Preferences {
     private const val HOME_SECTOR_LIST = "home_sector_list"
     private const val RATING_PER_ITEM = "rating_per_item"
     private const val NEXT_UPDATE_CHECK = "next_update_check"
+    const val AUTO_UPDATE = "auto_update"
     private const val CONTINUOUS_PLAY = "continuous_play"
     private const val LAST_INSTANT_MIX = "last_instant_mix"
 
@@ -479,6 +480,11 @@ object Preferences {
         return App.getInstance().preferences.getLong(
                 NEXT_UPDATE_CHECK, 0
         ) + 86400000 < System.currentTimeMillis()
+    }
+
+    @JvmStatic
+    fun isAutoUpdateEnabled(): Boolean {
+        return App.getInstance().preferences.getBoolean(AUTO_UPDATE, true)
     }
 
     @JvmStatic
