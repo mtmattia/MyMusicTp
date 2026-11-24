@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -73,5 +74,11 @@
                 android:name="autoStoreLocales"
                 android:value="true" />
         </service>
+        <!-- Copertine dei riquadri della Home di Android Auto (sola lettura) -->
+        <provider
+            android:name=".service.auto.AutoTileProvider"
+            android:authorities="${applicationId}.autotiles"
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
     </application>
 </manifest>

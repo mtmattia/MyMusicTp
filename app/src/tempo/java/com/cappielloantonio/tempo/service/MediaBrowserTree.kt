@@ -10,6 +10,8 @@ import androidx.media3.session.LibraryResult
 import com.cappielloantonio.tempo.App
 import com.cappielloantonio.tempo.R
 import com.cappielloantonio.tempo.repository.AutomotiveRepository
+import com.cappielloantonio.tempo.service.auto.AutoTileArtwork
+import java.util.concurrent.Executors
 import com.cappielloantonio.tempo.util.Preferences.getServerId
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
@@ -52,6 +54,16 @@ object MediaBrowserTree {
     private const val STARRED_ARTISTS_ID = "[starredArtistsID]"
     private const val RANDOM_ID = "[randomID]"
     private const val DISCOVERY_ID = "[discoveryID]"
+
+    // Libreria: album, artisti, generi, anni
+    private const val LIB_ALBUMS_ID = "[libAlbumsID]"
+    private const val LIB_ARTISTS_ID = "[libArtistsID]"
+    private const val LIB_GENRES_ID = "[libGenresID]"
+    private const val LIB_YEARS_ID = "[libYearsID]"
+    private const val LIB_ALBUM_ITEM = "[libAlbumItem]"
+    private const val LIB_ARTIST_ITEM = "[libArtistItem]"
+    private const val LIB_GENRE_ITEM = "[libGenreItem]"
+    private const val LIB_DECADE_ITEM = "[libDecadeItem]"
 
     // Second level LIBRARY_ID
     private const val FOLDER_ID = "[folderID]"
@@ -342,8 +354,31 @@ object MediaBrowserTree {
                 )
             )
 
-        treeNodes[LIBRARY_ID]!!.addChild(FOLDER_ID)
+        listOf(
+            Triple(LIB_ALBUMS_ID, R.string.auto_albums, MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS),
+            Triple(LIB_ARTISTS_ID, R.string.auto_artists, MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS),
+            Triple(LIB_GENRES_ID, R.string.auto_genres, MediaMetadata.MEDIA_TYPE_FOLDER_GENRES),
+            Triple(LIB_YEARS_ID, R.string.auto_years, MediaMetadata.MEDIA_TYPE_FOLDER_YEARS)
+        ).forEach { (nodeId, title, type) ->
+            treeNodes[nodeId] = MediaItemNode(
+                buildMediaItem(
+                    title = t(title),
+                    mediaId = nodeId,
+                    isPlayable = false,
+                    isBrowsable = true,
+                    mediaType = type,
+                    childrenBrowsableStyle = if (nodeId == LIB_ALBUMS_ID || nodeId == LIB_ARTISTS_ID) CONTENT_STYLE_GRID else CONTENT_STYLE_LIST
+                )
+            )
+        }
+
+        // Ordine richiesto: album, artisti, generi, anni, playlist e cartelle per ultime
+        treeNodes[LIBRARY_ID]!!.addChild(LIB_ALBUMS_ID)
+        treeNodes[LIBRARY_ID]!!.addChild(LIB_ARTISTS_ID)
+        treeNodes[LIBRARY_ID]!!.addChild(LIB_GENRES_ID)
+        treeNodes[LIBRARY_ID]!!.addChild(LIB_YEARS_ID)
         treeNodes[LIBRARY_ID]!!.addChild(PLAYLIST_ID)
+        treeNodes[LIBRARY_ID]!!.addChild(FOLDER_ID)
 
         // Second level OTHER_ID
 
@@ -384,15 +419,15 @@ object MediaBrowserTree {
      */
     private fun homeSections(): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
         val tiles = listOf(
-            tile(DISCOVERY_ID, automotiveRepository.getRandomSongs(1)),
             tile(LAST_PLAYED_ID, automotiveRepository.getAlbums(LAST_PLAYED_ID, "recent", 1)),
-            tile(MADE_FOR_YOU_ID, automotiveRepository.getMadeForYouSeeds(MADE_FOR_YOU_ID, 1)),
             tile(RECENTLY_ADDED_ID, automotiveRepository.getAlbums(RECENTLY_ADDED_ID, "newest", 1)),
+            tile(MADE_FOR_YOU_ID, automotiveRepository.getMadeForYouSeeds(MADE_FOR_YOU_ID, 1)),
             tile(MOST_PLAYED_ID, automotiveRepository.getAlbums(MOST_PLAYED_ID, "frequent", 1)),
+            tile(DISCOVERY_ID, automotiveRepository.getRandomSongs(1)),
+            tile(RECENT_SONGS_ID, automotiveRepository.getRecentlyPlayedSongs(getServerId(), 1)),
             tile(STARRED_TRACKS_ID, automotiveRepository.starredSongs),
             tile(STARRED_ALBUMS_ID, automotiveRepository.getStarredAlbums(STARRED_ALBUMS_ID)),
-            tile(STARRED_ARTISTS_ID, automotiveRepository.getStarredArtists(STARRED_ARTISTS_ID)),
-            tile(RECENT_SONGS_ID, automotiveRepository.getRecentlyPlayedSongs(getServerId(), 1)),
+            tile(STARRED_ARTISTS_ID, automotiveRepository.getStarredArtists(STARRED_ARTISTS_ID))
         )
 
         return Futures.transform(Futures.allAsList(tiles), { items ->
@@ -400,7 +435,12 @@ object MediaBrowserTree {
         }, MoreExecutors.directExecutor())
     }
 
-    /** Riquadro della sezione con la copertina del primo elemento; null se la sezione è vuota. */
+    private val tileExecutor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(3))
+
+    /**
+     * Riquadro della sezione nello stile "Scoperta": copertina del primo elemento, sfumatura
+     * e nome della sezione scritto sopra. null se la sezione è vuota.
+     */
     private fun tile(
         id: String,
         content: ListenableFuture<LibraryResult<ImmutableList<MediaItem>>>
@@ -408,10 +448,19 @@ object MediaBrowserTree {
         val node = treeNodes[id]!!.item
         val withArt = Futures.transform(content, { result ->
             if (result?.value.isNullOrEmpty()) return@transform null
-            val art = result?.value?.firstOrNull { it.mediaMetadata.artworkUri != null }?.mediaMetadata?.artworkUri
+            val cover = result?.value?.firstOrNull { it.mediaMetadata.artworkUri != null }?.mediaMetadata?.artworkUri
+            val title = node.mediaMetadata.title?.toString() ?: ""
+            val art = AutoTileArtwork.render(App.getContext(), id, title, cover) ?: cover
             if (art == null) node
-            else node.buildUpon().setMediaMetadata(node.mediaMetadata.buildUpon().setArtworkUri(art).build()).build()
-        }, MoreExecutors.directExecutor())
+            else node.buildUpon().setMediaMetadata(
+                node.mediaMetadata.buildUpon()
+                    .setArtworkUri(art)
+                    // Il nome è già scritto sulla copertina: niente didascalia sotto il riquadro
+                    .setTitle(" ")
+                    .setDisplayTitle(" ")
+                    .build()
+            ).build()
+        }, tileExecutor)
         // Sezione vuota o in errore (es. nessun preferito): niente riquadro col triangolo di avviso
         return Futures.catching(withArt, Throwable::class.java, { null }, MoreExecutors.directExecutor())
     }
@@ -435,12 +484,33 @@ object MediaBrowserTree {
             STARRED_ARTISTS_ID -> automotiveRepository.getStarredArtists(id)
             RANDOM_ID -> automotiveRepository.getRandomSongs(100)
             DISCOVERY_ID -> automotiveRepository.getRandomSongs(20)
+            LIB_ALBUMS_ID -> automotiveRepository.getAlbums(LIB_ALBUM_ITEM, "alphabeticalByName", 500)
+            LIB_ARTISTS_ID -> automotiveRepository.getAllArtists(LIB_ARTIST_ITEM)
+            LIB_GENRES_ID -> automotiveRepository.getGenres(LIB_GENRE_ITEM)
+            LIB_YEARS_ID -> automotiveRepository.getDecades(LIB_DECADE_ITEM)
             FOLDER_ID -> automotiveRepository.getMusicFolders(id)
             PLAYLIST_ID -> automotiveRepository.getPlaylists(id)
             PODCAST_ID -> automotiveRepository.getNewestPodcastEpisodes(100)
             RADIO_ID -> automotiveRepository.internetRadioStations
 
             else -> {
+                if (id.startsWith(LIB_ALBUM_ITEM)) {
+                    return automotiveRepository.getAlbumTracks(id.removePrefix(LIB_ALBUM_ITEM))
+                }
+
+                if (id.startsWith(LIB_ARTIST_ITEM)) {
+                    return automotiveRepository.getArtistAlbum(LIB_ALBUM_ITEM, id.removePrefix(LIB_ARTIST_ITEM))
+                }
+
+                if (id.startsWith(LIB_GENRE_ITEM)) {
+                    return automotiveRepository.getSongsByGenre(id.removePrefix(LIB_GENRE_ITEM))
+                }
+
+                if (id.startsWith(LIB_DECADE_ITEM)) {
+                    val decade = id.removePrefix(LIB_DECADE_ITEM).toIntOrNull() ?: 0
+                    return automotiveRepository.getAlbums(LIB_ALBUM_ITEM, "byYear", 500, decade, decade + 9)
+                }
+
                 if (id.startsWith(MOST_PLAYED_ID)) {
                     return automotiveRepository.getAlbumTracks(
                         id.removePrefix(

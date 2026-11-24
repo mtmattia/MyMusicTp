@@ -440,4 +440,8 @@
 	<string name="app_update_install_failed">Installazione dell\'aggiornamento non riuscita</string>
 	<string name="library_search_hint">Cerca brani, artisti o album</string>
 	<string name="library_title_years">Anni</string>
+	<string name="auto_albums">Album</string>
+	<string name="auto_artists">Artisti</string>
+	<string name="auto_genres">Generi</string>
+	<string name="auto_years">Anni</string>
 </resources>

@@ -57,11 +57,15 @@ public class AutomotiveRepository {
     private final ChronologyDao chronologyDao = AppDatabase.getInstance().chronologyDao();
 
     public ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> getAlbums(String prefix, String type, int size) {
+        return getAlbums(prefix, type, size, null, null);
+    }
+
+    public ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> getAlbums(String prefix, String type, int size, Integer fromYear, Integer toYear) {
         final SettableFuture<LibraryResult<ImmutableList<MediaItem>>> listenableFuture = SettableFuture.create();
 
         App.getSubsonicClientInstance(false)
                 .getAlbumSongListClient()
-                .getAlbumList2(type, size, 0, null, null)
+                .getAlbumList2(type, size, 0, fromYear, toYear)
                 .enqueue(new Callback<ApiResponse>() {
                     @Override
                     public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
@@ -108,6 +112,150 @@ public class AutomotiveRepository {
                 });
 
         return listenableFuture;
+    }
+
+    // ---- Libreria in Android Auto: artisti, generi, anni ----
+
+    private static MediaItem browsable(String id, String title, String subtitle, Uri art, int mediaType) {
+        MediaMetadata.Builder md = new MediaMetadata.Builder()
+                .setTitle(title)
+                .setIsBrowsable(true)
+                .setIsPlayable(false)
+                .setMediaType(mediaType);
+        if (subtitle != null) md.setSubtitle(subtitle);
+        if (art != null) md.setArtworkUri(art);
+        return new MediaItem.Builder().setMediaId(id).setMediaMetadata(md.build()).setUri("").build();
+    }
+
+    /** Tutti gli artisti, in ordine alfabetico. */
+    public ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> getAllArtists(String prefix) {
+        final SettableFuture<LibraryResult<ImmutableList<MediaItem>>> future = SettableFuture.create();
+
+        App.getSubsonicClientInstance(false)
+                .getBrowsingClient()
+                .getArtists()
+                .enqueue(new Callback<ApiResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
+                        List<MediaItem> items = new ArrayList<>();
+                        if (response.isSuccessful() && response.body() != null
+                                && response.body().getSubsonicResponse().getArtists() != null
+                                && response.body().getSubsonicResponse().getArtists().getIndices() != null) {
+                            for (com.cappielloantonio.tempo.subsonic.models.IndexID3 index : response.body().getSubsonicResponse().getArtists().getIndices()) {
+                                if (index == null || index.getArtists() == null) continue;
+                                for (ArtistID3 artist : index.getArtists()) {
+                                    Uri art = Uri.parse(CustomGlideRequest.createUrl(artist.getCoverArtId(), Preferences.getImageSize()));
+                                    items.add(browsable(prefix + artist.getId(), artist.getName(), null, art, MediaMetadata.MEDIA_TYPE_ARTIST));
+                                }
+                            }
+                        }
+                        future.set(LibraryResult.ofItemList(ImmutableList.copyOf(items), null));
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
+                        future.setException(t);
+                    }
+                });
+
+        return future;
+    }
+
+    /** Generi, dal più ricco al più povero. */
+    public ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> getGenres(String prefix) {
+        final SettableFuture<LibraryResult<ImmutableList<MediaItem>>> future = SettableFuture.create();
+
+        App.getSubsonicClientInstance(false)
+                .getBrowsingClient()
+                .getGenres()
+                .enqueue(new Callback<ApiResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
+                        List<MediaItem> items = new ArrayList<>();
+                        if (response.isSuccessful() && response.body() != null
+                                && response.body().getSubsonicResponse().getGenres() != null
+                                && response.body().getSubsonicResponse().getGenres().getGenres() != null) {
+                            List<com.cappielloantonio.tempo.subsonic.models.Genre> genres = new ArrayList<>(response.body().getSubsonicResponse().getGenres().getGenres());
+                            genres.sort((x, y) -> Integer.compare(y.getSongCount(), x.getSongCount()));
+                            for (com.cappielloantonio.tempo.subsonic.models.Genre genre : genres) {
+                                if (genre.getGenre() == null || genre.getGenre().isEmpty()) continue;
+                                items.add(browsable(prefix + genre.getGenre(), genre.getGenre(), genre.getSongCount() + " brani", null, MediaMetadata.MEDIA_TYPE_FOLDER_GENRES));
+                            }
+                        }
+                        future.set(LibraryResult.ofItemList(ImmutableList.copyOf(items), null));
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
+                        future.setException(t);
+                    }
+                });
+
+        return future;
+    }
+
+    /** Brani di un genere (riproducibili). */
+    public ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> getSongsByGenre(String genre) {
+        final SettableFuture<LibraryResult<ImmutableList<MediaItem>>> future = SettableFuture.create();
+
+        App.getSubsonicClientInstance(false)
+                .getAlbumSongListClient()
+                .getSongsByGenre(genre, 200, 0)
+                .enqueue(new Callback<ApiResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
+                        List<Child> songs = response.isSuccessful() && response.body() != null
+                                && response.body().getSubsonicResponse().getSongsByGenre() != null
+                                && response.body().getSubsonicResponse().getSongsByGenre().getSongs() != null
+                                ? response.body().getSubsonicResponse().getSongsByGenre().getSongs() : new ArrayList<>();
+                        setChildrenMetadata(songs);
+                        future.set(LibraryResult.ofItemList(ImmutableList.copyOf(MappingUtil.mapMediaItems(songs)), null));
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
+                        future.setException(t);
+                    }
+                });
+
+        return future;
+    }
+
+    /** Decenni presenti nella libreria (dal più recente), es. "2010" per gli anni 2010. */
+    public ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> getDecades(String prefix) {
+        final SettableFuture<LibraryResult<ImmutableList<MediaItem>>> future = SettableFuture.create();
+        int now = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+
+        // Album più vecchio: byYear da 0 a oggi, primo risultato
+        App.getSubsonicClientInstance(false)
+                .getAlbumSongListClient()
+                .getAlbumList2("byYear", 1, 0, 1, now)
+                .enqueue(new Callback<ApiResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<ApiResponse> call, @NonNull Response<ApiResponse> response) {
+                        int first = now;
+                        if (response.isSuccessful() && response.body() != null
+                                && response.body().getSubsonicResponse().getAlbumList2() != null
+                                && response.body().getSubsonicResponse().getAlbumList2().getAlbums() != null
+                                && !response.body().getSubsonicResponse().getAlbumList2().getAlbums().isEmpty()) {
+                            Integer y = response.body().getSubsonicResponse().getAlbumList2().getAlbums().get(0).getYear();
+                            if (y != null && y > 0) first = y;
+                        }
+                        List<MediaItem> items = new ArrayList<>();
+                        for (int d = now - now % 10; d >= first - first % 10; d -= 10) {
+                            String label = d < 2000 ? "Anni " + (d % 100) : "Anni " + d;
+                            items.add(browsable(prefix + d, label, null, null, MediaMetadata.MEDIA_TYPE_FOLDER_YEARS));
+                        }
+                        future.set(LibraryResult.ofItemList(ImmutableList.copyOf(items), null));
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<ApiResponse> call, @NonNull Throwable t) {
+                        future.setException(t);
+                    }
+                });
+
+        return future;
     }
 
     public ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> getStarredSongs() {
