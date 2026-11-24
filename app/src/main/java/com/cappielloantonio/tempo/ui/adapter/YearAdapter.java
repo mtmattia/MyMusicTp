@@ -36,6 +36,7 @@ public class YearAdapter extends RecyclerView.Adapter<YearAdapter.ViewHolder> {
         int year = years.get(position);
 
         holder.item.yearLabel.setText(Integer.toString(year));
+        com.cappielloantonio.tempo.util.TileCoverLoader.loadDecade(holder.item.tileCover, year);
     }
 
     @Override

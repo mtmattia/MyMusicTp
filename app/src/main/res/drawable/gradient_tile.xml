@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sfumatura dei riquadri: scura in basso a sinistra, dove sta il nome -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="45"
+        android:endColor="#10000000"
+        android:startColor="#C0000000" />
+</shape>

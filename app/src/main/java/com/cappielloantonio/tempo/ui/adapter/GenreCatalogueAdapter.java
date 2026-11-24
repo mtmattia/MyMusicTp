@@ -73,6 +73,7 @@ public class GenreCatalogueAdapter extends RecyclerView.Adapter<GenreCatalogueAd
         Genre genre = genres.get(position);
 
         holder.item.genreLabel.setText(genre.getGenre());
+        com.cappielloantonio.tempo.util.TileCoverLoader.loadGenre(holder.item.tileCover, genre.getGenre());
     }
 
     @Override

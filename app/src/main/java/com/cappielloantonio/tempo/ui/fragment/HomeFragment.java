@@ -75,6 +75,12 @@ public class HomeFragment extends Fragment {
         tabLayout.setTabMode(TabLayout.MODE_FIXED);
         tabLayout.setBackgroundColor(android.graphics.Color.TRANSPARENT);
 
+        // Ricerca in alto, nella stessa posizione della Libreria, sopra Musica / Podcast / Radio
+        View searchBar = getLayoutInflater().inflate(R.layout.view_search_bar, appBarLayout, false);
+        // Spazio per la ricerca: la barra vera sta sopra le pagine (MainPagerFragment) e resta ferma
+        searchBar.setVisibility(View.INVISIBLE);
+        appBarLayout.addView(searchBar);
+
         appBarLayout.addView(tabLayout);
     }
 

@@ -444,4 +444,6 @@
     <string name="app_update_bad_signature">Update rejected: the signature does not match the installed app</string>
     <string name="app_update_allow_install">Allow Tempo to install apps, then go back: the update will continue</string>
     <string name="app_update_install_failed">Update installation failed</string>
+    <string name="library_search_hint">Search songs, artists or albums</string>
+    <string name="library_title_years">Years</string>
 </resources>

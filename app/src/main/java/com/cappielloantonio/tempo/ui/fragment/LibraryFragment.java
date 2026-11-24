@@ -27,6 +27,7 @@ import com.cappielloantonio.tempo.ui.adapter.ArtistAdapter;
 import com.cappielloantonio.tempo.ui.adapter.GenreAdapter;
 import com.cappielloantonio.tempo.ui.adapter.MusicFolderAdapter;
 import com.cappielloantonio.tempo.ui.adapter.PlaylistHorizontalAdapter;
+import com.cappielloantonio.tempo.ui.adapter.YearAdapter;
 import com.cappielloantonio.tempo.ui.dialog.PlaylistEditorDialog;
 import com.cappielloantonio.tempo.util.Constants;
 import com.cappielloantonio.tempo.util.Preferences;
@@ -96,13 +97,14 @@ public class LibraryFragment extends Fragment implements ClickCallback {
     }
 
     private void init() {
-        bind.albumCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.action_libraryFragment_to_albumCatalogueFragment));
-        bind.artistCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.action_libraryFragment_to_artistCatalogueFragment));
-        bind.genreCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.action_libraryFragment_to_genreCatalogueFragment));
+        initYearsView();
+        bind.albumCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.albumCatalogueFragment));
+        bind.artistCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.artistCatalogueFragment));
+        bind.genreCatalogueTextViewClickable.setOnClickListener(v -> activity.navController.navigate(R.id.genreCatalogueFragment));
         bind.playlistCatalogueTextViewClickable.setOnClickListener(v -> {
             Bundle bundle = new Bundle();
             bundle.putString(Constants.PLAYLIST_ALL, Constants.PLAYLIST_ALL);
-            activity.navController.navigate(R.id.action_libraryFragment_to_playlistCatalogueFragment, bundle);
+            activity.navController.navigate(R.id.playlistCatalogueFragment, bundle);
         });
 
         bind.albumCatalogueSampleTextViewRefreshable.setOnLongClickListener(view -> {
@@ -123,10 +125,34 @@ public class LibraryFragment extends Fragment implements ClickCallback {
         });
     }
 
+    private void initYearsView() {
+        bind.libraryYearsRecyclerView.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false));
+        bind.libraryYearsRecyclerView.setHasFixedSize(true);
+
+        YearAdapter yearAdapter = new YearAdapter(this);
+        bind.libraryYearsRecyclerView.setAdapter(yearAdapter);
+        libraryViewModel.getDecades(getViewLifecycleOwner()).observe(getViewLifecycleOwner(), years -> {
+            if (bind == null) return;
+            bind.libraryYearsSector.setVisibility(years != null && !years.isEmpty() ? View.VISIBLE : View.GONE);
+            if (years != null) yearAdapter.setItems(years);
+        });
+    }
+
+    @Override
+    public void onYearClick(Bundle bundle) {
+        Navigation.findNavController(requireView()).navigate(R.id.songListPageFragment, bundle);
+    }
+
     private void initAppBar() {
         materialToolbar = bind.getRoot().findViewById(R.id.toolbar);
 
         activity.setSupportActionBar(materialToolbar);
+
+        // Spazio per la ricerca, che sta sopra le pagine e resta ferma tra Home e Libreria
+        android.view.ViewGroup appBar = bind.getRoot().findViewById(R.id.toolbar_fragment);
+        View spacer = getLayoutInflater().inflate(R.layout.view_search_bar, appBar, false);
+        spacer.setVisibility(View.INVISIBLE);
+        appBar.addView(spacer);
         Objects.requireNonNull(materialToolbar.getOverflowIcon()).setTint(requireContext().getResources().getColor(R.color.titleTextColor, null));
     }
 
@@ -196,7 +222,7 @@ public class LibraryFragment extends Fragment implements ClickCallback {
     }
 
     private void initGenreView() {
-        bind.genreRecyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 3, GridLayoutManager.HORIZONTAL, false));
+        bind.genreRecyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 2, GridLayoutManager.HORIZONTAL, false));
         bind.genreRecyclerView.setHasFixedSize(true);
 
         genreAdapter = new GenreAdapter(this);

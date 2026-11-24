@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home, Libreria e Download affiancate: si scorre col dito. La ricerca sta sopra e resta ferma
+     tra Home e Libreria, mentre verso Download scorre via insieme alla pagina. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/main_pager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <include
+        android:id="@+id/main_search_bar"
+        layout="@layout/view_search_bar" />
+</FrameLayout>

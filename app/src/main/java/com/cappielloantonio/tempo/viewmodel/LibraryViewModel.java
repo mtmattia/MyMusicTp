@@ -88,6 +88,13 @@ public class LibraryViewModel extends AndroidViewModel {
         return sampleGenres;
     }
 
+    private androidx.lifecycle.MutableLiveData<List<Integer>> decades;
+
+    public LiveData<List<Integer>> getDecades(LifecycleOwner owner) {
+        if (decades == null) decades = albumRepository.getDecades();
+        return decades;
+    }
+
     public LiveData<List<Playlist>> getPlaylistSample(LifecycleOwner owner) {
         if (playlistSample.getValue() == null) {
             playlistRepository.getPlaylists(true, 10).observe(owner, playlistSample::postValue);

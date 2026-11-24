@@ -438,4 +438,6 @@
 	<string name="app_update_bad_signature">Aggiornamento rifiutato: la firma non corrisponde all\'app installata</string>
 	<string name="app_update_allow_install">Consenti a Tempo di installare app, poi torna indietro: l\'aggiornamento riprende</string>
 	<string name="app_update_install_failed">Installazione dell\'aggiornamento non riuscita</string>
+	<string name="library_search_hint">Cerca brani, artisti o album</string>
+	<string name="library_title_years">Anni</string>
 </resources>
