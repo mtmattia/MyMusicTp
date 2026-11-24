@@ -423,4 +423,16 @@
     <string name="undraw_url">https://undraw.co/</string>
     <string name="library_search_hint">Search songs, artists or albums</string>
     <string name="library_title_years">Years</string>
+    <string name="auto_home">Home</string>
+    <string name="auto_library">Library</string>
+    <string name="auto_other">Other</string>
+    <string name="auto_recent_songs">Recent songs</string>
+    <string name="auto_starred_tracks">Starred tracks</string>
+    <string name="auto_starred_albums">Starred albums</string>
+    <string name="auto_starred_artists">Starred artists</string>
+    <string name="auto_random">Random</string>
+    <string name="auto_folders">Folders</string>
+    <string name="auto_playlists">Playlists</string>
+    <string name="auto_podcasts">Podcasts</string>
+    <string name="auto_radio">Radio stations</string>
 </resources>

@@ -1,19 +1,31 @@
 package com.cappielloantonio.tempo.service
 
 import android.net.Uri
+import android.os.Bundle
 import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaItem.SubtitleConfiguration
 import androidx.media3.common.MediaMetadata
 import androidx.media3.session.LibraryResult
+import com.cappielloantonio.tempo.App
+import com.cappielloantonio.tempo.R
 import com.cappielloantonio.tempo.repository.AutomotiveRepository
 import com.cappielloantonio.tempo.util.Preferences.getServerId
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.SettableFuture
 
 object MediaBrowserTree {
+
+    // Chiavi standard Android Auto per lo stile dei contenuti
+    const val CONTENT_STYLE_SUPPORTED = "android.media.browse.CONTENT_STYLE_SUPPORTED"
+    const val CONTENT_STYLE_BROWSABLE_HINT = "android.media.browse.CONTENT_STYLE_BROWSABLE_HINT"
+    const val CONTENT_STYLE_PLAYABLE_HINT = "android.media.browse.CONTENT_STYLE_PLAYABLE_HINT"
+    const val CONTENT_STYLE_LIST = 1
+    const val CONTENT_STYLE_GRID = 2
+    private fun t(res: Int): String = App.getContext().getString(res)
 
     private lateinit var automotiveRepository: AutomotiveRepository
 
@@ -39,6 +51,7 @@ object MediaBrowserTree {
     private const val STARRED_ALBUMS_ID = "[starredAlbumsID]"
     private const val STARRED_ARTISTS_ID = "[starredArtistsID]"
     private const val RANDOM_ID = "[randomID]"
+    private const val DISCOVERY_ID = "[discoveryID]"
 
     // Second level LIBRARY_ID
     private const val FOLDER_ID = "[folderID]"
@@ -81,10 +94,17 @@ object MediaBrowserTree {
         artist: String? = null,
         genre: String? = null,
         sourceUri: Uri? = null,
-        imageUri: Uri? = null
+        imageUri: Uri? = null,
+        childrenBrowsableStyle: Int? = null
     ): MediaItem {
+        // Android Auto: stile dei figli di questo nodo (lista o griglia)
+        val extras = childrenBrowsableStyle?.let {
+            Bundle().apply { putInt(CONTENT_STYLE_BROWSABLE_HINT, it) }
+        }
+
         val metadata =
             MediaMetadata.Builder()
+                .setExtras(extras)
                 .setAlbumTitle(album)
                 .setTitle(title)
                 .setArtist(artist)
@@ -128,33 +148,36 @@ object MediaBrowserTree {
         treeNodes[HOME_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Home",
+                    title = t(R.string.auto_home),
                     mediaId = HOME_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
         treeNodes[LIBRARY_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Library",
+                    title = t(R.string.auto_library),
                     mediaId = LIBRARY_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                    childrenBrowsableStyle = CONTENT_STYLE_LIST
                 )
             )
 
         treeNodes[OTHER_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Other",
+                    title = t(R.string.auto_other),
                     mediaId = OTHER_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                    childrenBrowsableStyle = CONTENT_STYLE_LIST
                 )
             )
 
@@ -167,40 +190,43 @@ object MediaBrowserTree {
         treeNodes[MOST_PLAYED_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Most played",
+                    title = t(R.string.home_title_most_played),
                     mediaId = MOST_PLAYED_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
         treeNodes[LAST_PLAYED_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Last played",
+                    title = t(R.string.home_title_last_played),
                     mediaId = LAST_PLAYED_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
         treeNodes[RECENTLY_ADDED_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Recently added",
+                    title = t(R.string.home_title_recently_added),
                     mediaId = RECENTLY_ADDED_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
         treeNodes[RECENT_SONGS_ID] =
                 MediaItemNode(
                         buildMediaItem(
-                                title = "Recent songs",
+                                title = t(R.string.auto_recent_songs),
                                 mediaId = RECENT_SONGS_ID,
                                 isPlayable = false,
                                 isBrowsable = true,
@@ -211,18 +237,19 @@ object MediaBrowserTree {
         treeNodes[MADE_FOR_YOU_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Made for you",
+                    title = t(R.string.home_title_made_for_you),
                     mediaId = MADE_FOR_YOU_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
         treeNodes[STARRED_TRACKS_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Starred tracks",
+                    title = t(R.string.auto_starred_tracks),
                     mediaId = STARRED_TRACKS_ID,
                     isPlayable = false,
                     isBrowsable = true,
@@ -233,29 +260,31 @@ object MediaBrowserTree {
         treeNodes[STARRED_ALBUMS_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Starred albums",
+                    title = t(R.string.auto_starred_albums),
                     mediaId = STARRED_ALBUMS_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
         treeNodes[STARRED_ARTISTS_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Starred artists",
+                    title = t(R.string.auto_starred_artists),
                     mediaId = STARRED_ARTISTS_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS,
+                    childrenBrowsableStyle = CONTENT_STYLE_GRID
                 )
             )
 
         treeNodes[RANDOM_ID] =
                 MediaItemNode(
                         buildMediaItem(
-                                title = "Random",
+                                title = t(R.string.auto_random),
                                 mediaId = RANDOM_ID,
                                 isPlayable = false,
                                 isBrowsable = true,
@@ -267,6 +296,21 @@ object MediaBrowserTree {
         treeNodes[HOME_ID]!!.addChild(LAST_PLAYED_ID)
         treeNodes[HOME_ID]!!.addChild(RECENTLY_ADDED_ID)
         treeNodes[HOME_ID]!!.addChild(RECENT_SONGS_ID)
+        treeNodes[DISCOVERY_ID] =
+            MediaItemNode(
+                buildMediaItem(
+                    title = t(R.string.home_title_discovery),
+                    mediaId = DISCOVERY_ID,
+                    isPlayable = false,
+                    isBrowsable = true,
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
+                ).let { item ->
+                    // Come "Scoperta" nell'app: brani casuali a copertine grandi
+                    val extras = Bundle().apply { putInt(CONTENT_STYLE_PLAYABLE_HINT, CONTENT_STYLE_GRID) }
+                    item.buildUpon().setMediaMetadata(item.mediaMetadata.buildUpon().setExtras(extras).build()).build()
+                }
+            )
+
         treeNodes[HOME_ID]!!.addChild(MADE_FOR_YOU_ID)
         treeNodes[HOME_ID]!!.addChild(STARRED_TRACKS_ID)
         treeNodes[HOME_ID]!!.addChild(STARRED_ALBUMS_ID)
@@ -278,18 +322,19 @@ object MediaBrowserTree {
         treeNodes[FOLDER_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Folders",
+                    title = t(R.string.auto_folders),
                     mediaId = FOLDER_ID,
                     isPlayable = false,
                     isBrowsable = true,
-                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                    childrenBrowsableStyle = CONTENT_STYLE_LIST
                 )
             )
 
         treeNodes[PLAYLIST_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Playlists",
+                    title = t(R.string.auto_playlists),
                     mediaId = PLAYLIST_ID,
                     isPlayable = false,
                     isBrowsable = true,
@@ -305,7 +350,7 @@ object MediaBrowserTree {
         treeNodes[PODCAST_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Podcasts",
+                    title = t(R.string.auto_podcasts),
                     mediaId = PODCAST_ID,
                     isPlayable = false,
                     isBrowsable = true,
@@ -316,7 +361,7 @@ object MediaBrowserTree {
         treeNodes[RADIO_ID] =
             MediaItemNode(
                 buildMediaItem(
-                    title = "Radio stations",
+                    title = t(R.string.auto_radio),
                     mediaId = RADIO_ID,
                     isPlayable = false,
                     isBrowsable = true,
@@ -332,12 +377,51 @@ object MediaBrowserTree {
         return treeNodes[ROOT_ID]!!.item
     }
 
+    /**
+     * Home di Android Auto: riquadri grandi, uno per sezione, con la copertina del
+     * primo elemento (come le app di musica standard). Toccando un riquadro si apre
+     * la sezione, anche lei a copertine.
+     */
+    private fun homeSections(): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+        val tiles = listOf(
+            tile(DISCOVERY_ID, automotiveRepository.getRandomSongs(1)),
+            tile(LAST_PLAYED_ID, automotiveRepository.getAlbums(LAST_PLAYED_ID, "recent", 1)),
+            tile(MADE_FOR_YOU_ID, automotiveRepository.getMadeForYouSeeds(MADE_FOR_YOU_ID, 1)),
+            tile(RECENTLY_ADDED_ID, automotiveRepository.getAlbums(RECENTLY_ADDED_ID, "newest", 1)),
+            tile(MOST_PLAYED_ID, automotiveRepository.getAlbums(MOST_PLAYED_ID, "frequent", 1)),
+            tile(STARRED_TRACKS_ID, automotiveRepository.starredSongs),
+            tile(STARRED_ALBUMS_ID, automotiveRepository.getStarredAlbums(STARRED_ALBUMS_ID)),
+            tile(STARRED_ARTISTS_ID, automotiveRepository.getStarredArtists(STARRED_ARTISTS_ID)),
+            tile(RECENT_SONGS_ID, automotiveRepository.getRecentlyPlayedSongs(getServerId(), 1)),
+        )
+
+        return Futures.transform(Futures.allAsList(tiles), { items ->
+            LibraryResult.ofItemList(ImmutableList.copyOf(items.filterNotNull()), null)
+        }, MoreExecutors.directExecutor())
+    }
+
+    /** Riquadro della sezione con la copertina del primo elemento; null se la sezione è vuota. */
+    private fun tile(
+        id: String,
+        content: ListenableFuture<LibraryResult<ImmutableList<MediaItem>>>
+    ): ListenableFuture<MediaItem?> {
+        val node = treeNodes[id]!!.item
+        val withArt = Futures.transform(content, { result ->
+            if (result?.value.isNullOrEmpty()) return@transform null
+            val art = result?.value?.firstOrNull { it.mediaMetadata.artworkUri != null }?.mediaMetadata?.artworkUri
+            if (art == null) node
+            else node.buildUpon().setMediaMetadata(node.mediaMetadata.buildUpon().setArtworkUri(art).build()).build()
+        }, MoreExecutors.directExecutor())
+        // Sezione vuota o in errore (es. nessun preferito): niente riquadro col triangolo di avviso
+        return Futures.catching(withArt, Throwable::class.java, { null }, MoreExecutors.directExecutor())
+    }
+
     fun getChildren(
         id: String
     ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
         return when (id) {
             ROOT_ID -> treeNodes[ROOT_ID]?.getChildren()!!
-            HOME_ID -> treeNodes[HOME_ID]?.getChildren()!!
+            HOME_ID -> homeSections()
             LIBRARY_ID -> treeNodes[LIBRARY_ID]?.getChildren()!!
             OTHER_ID -> treeNodes[OTHER_ID]?.getChildren()!!
 
@@ -345,11 +429,12 @@ object MediaBrowserTree {
             LAST_PLAYED_ID -> automotiveRepository.getAlbums(id, "recent", 100)
             RECENTLY_ADDED_ID -> automotiveRepository.getAlbums(id, "newest", 100)
             RECENT_SONGS_ID -> automotiveRepository.getRecentlyPlayedSongs(getServerId(),100)
-            MADE_FOR_YOU_ID -> automotiveRepository.getStarredArtists(id)
+            MADE_FOR_YOU_ID -> automotiveRepository.getMadeForYouSeeds(id, 12)
             STARRED_TRACKS_ID -> automotiveRepository.starredSongs
             STARRED_ALBUMS_ID -> automotiveRepository.getStarredAlbums(id)
             STARRED_ARTISTS_ID -> automotiveRepository.getStarredArtists(id)
             RANDOM_ID -> automotiveRepository.getRandomSongs(100)
+            DISCOVERY_ID -> automotiveRepository.getRandomSongs(20)
             FOLDER_ID -> automotiveRepository.getMusicFolders(id)
             PLAYLIST_ID -> automotiveRepository.getPlaylists(id)
             PODCAST_ID -> automotiveRepository.getNewestPodcastEpisodes(100)
@@ -488,6 +573,24 @@ object MediaBrowserTree {
         }
 
         return updatedMediaItems
+    }
+
+    /**
+     * Ricerca vocale ("Ok Google, metti X su Tempo" o microfono in Android Auto).
+     * Restituisce solo brani riproducibili; query vuota = brani casuali.
+     */
+    fun voiceSearch(query: String): ListenableFuture<List<MediaItem>> {
+        val future = if (query.isBlank()) {
+            automotiveRepository.getRandomSongs(100)
+        } else {
+            automotiveRepository.search(query, ALBUM_ID, ARTIST_ID)
+        }
+
+        return Futures.transform(future, { result ->
+            result?.value
+                ?.filter { it.mediaMetadata.isPlayable == true && it.localConfiguration != null }
+                ?: emptyList()
+        }, MoreExecutors.directExecutor())
     }
 
     fun search(query: String): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {

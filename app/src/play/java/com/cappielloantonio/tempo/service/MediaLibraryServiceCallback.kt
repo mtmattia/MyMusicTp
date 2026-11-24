@@ -143,7 +143,18 @@ open class MediaLibrarySessionCallback(
         browser: MediaSession.ControllerInfo,
         params: MediaLibraryService.LibraryParams?
     ): ListenableFuture<LibraryResult<MediaItem>> {
-        return Futures.immediateFuture(LibraryResult.ofItem(MediaBrowserTree.getRootItem(), params))
+        // Stile vicino a quello di default di Android Auto: album/artisti/playlist in griglia
+        // (riquadri grandi con copertina, facili da toccare), brani e categorie in lista.
+        val rootExtras = Bundle().apply {
+            putBoolean(MediaBrowserTree.CONTENT_STYLE_SUPPORTED, true)
+            putInt(MediaBrowserTree.CONTENT_STYLE_BROWSABLE_HINT, MediaBrowserTree.CONTENT_STYLE_GRID)
+            putInt(MediaBrowserTree.CONTENT_STYLE_PLAYABLE_HINT, MediaBrowserTree.CONTENT_STYLE_LIST)
+        }
+        val rootParams = MediaLibraryService.LibraryParams.Builder()
+            .setExtras(rootExtras)
+            .build()
+
+        return Futures.immediateFuture(LibraryResult.ofItem(MediaBrowserTree.getRootItem(), rootParams))
     }
 
     override fun onGetChildren(
@@ -162,6 +173,20 @@ open class MediaLibrarySessionCallback(
         controller: MediaSession.ControllerInfo,
         mediaItems: List<MediaItem>
     ): ListenableFuture<List<MediaItem>> {
+        // Ricerca vocale: Android Auto manda un item con solo la query (niente URI)
+        val searchQuery = mediaItems.singleOrNull()
+            ?.takeIf { it.localConfiguration == null }
+            ?.requestMetadata?.searchQuery
+        if (searchQuery != null) {
+            val voice = Futures.catching(
+                MediaBrowserTree.voiceSearch(searchQuery),
+                Throwable::class.java,
+                { t -> Log.e(TAG, "Voice search failed", t); emptyList<MediaItem>() },
+                MoreExecutors.directExecutor()
+            )
+            return Futures.withTimeout(voice, BROWSE_TIMEOUT_SECONDS, TimeUnit.SECONDS, timeoutExecutor)
+        }
+
         return try {
             super.onAddMediaItems(
                 mediaSession,

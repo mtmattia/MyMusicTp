@@ -417,4 +417,16 @@
 	<string name="undraw_url">https://undraw.co/</string>
 	<string name="library_search_hint">Cerca brani, artisti o album</string>
 	<string name="library_title_years">Anni</string>
+	<string name="auto_home">Home</string>
+	<string name="auto_library">Libreria</string>
+	<string name="auto_other">Altro</string>
+	<string name="auto_recent_songs">Brani recenti</string>
+	<string name="auto_starred_tracks">Brani preferiti</string>
+	<string name="auto_starred_albums">Album preferiti</string>
+	<string name="auto_starred_artists">Artisti preferiti</string>
+	<string name="auto_random">Casuale</string>
+	<string name="auto_folders">Cartelle</string>
+	<string name="auto_playlists">Playlist</string>
+	<string name="auto_podcasts">Podcast</string>
+	<string name="auto_radio">Radio</string>
 </resources>
