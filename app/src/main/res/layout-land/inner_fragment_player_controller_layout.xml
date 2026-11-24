@@ -75,7 +75,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
+    <com.cappielloantonio.tempo.ui.view.LoopMarqueeTextView
         android:id="@+id/player_media_title_label"
         style="@style/HeadlineLarge"
         android:layout_width="wrap_content"
@@ -114,7 +114,7 @@
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toEndOf="@+id/vertical_guideline" />
 
-    <TextView
+    <com.cappielloantonio.tempo.ui.view.LoopMarqueeTextView
         android:id="@+id/player_artist_name_label"
         style="@style/TitleMedium"
         android:layout_width="0dp"
