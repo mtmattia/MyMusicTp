@@ -31,6 +31,7 @@ class MediaService : MediaLibraryService() {
     private val librarySessionCallback = CustomMediaLibrarySessionCallback()
 
     private lateinit var player: ExoPlayer
+    private var playbackRecovery: PlaybackRecovery? = null
     private lateinit var mediaLibrarySession: MediaLibrarySession
     private lateinit var customCommands: List<CommandButton>
 
@@ -48,6 +49,7 @@ class MediaService : MediaLibraryService() {
 
         initializeCustomCommands()
         initializePlayer()
+        playbackRecovery = PlaybackRecovery.attach(this, player)
         initializeMediaLibrarySession()
         initializePlayerListener()
 
@@ -240,6 +242,7 @@ class MediaService : MediaLibraryService() {
     }
 
     private fun releasePlayer() {
+        playbackRecovery?.release()
         player.release()
         mediaLibrarySession.release()
     }
