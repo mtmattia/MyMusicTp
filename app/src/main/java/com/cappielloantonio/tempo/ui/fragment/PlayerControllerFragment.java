@@ -59,6 +59,7 @@ public class PlayerControllerFragment extends Fragment {
     private ToggleButton skipSilenceToggleButton;
     private Chip playerMediaExtension;
     private TextView playerMediaBitrate;
+    private TextView playerMediaCodecBadge;
     private ConstraintLayout playerQuickActionView;
     private ImageButton playerOpenQueueButton;
     private ImageButton playerTrackInfo;
@@ -117,6 +118,7 @@ public class PlayerControllerFragment extends Fragment {
         skipSilenceToggleButton = bind.getRoot().findViewById(R.id.player_skip_silence_toggle_button);
         playerMediaExtension = bind.getRoot().findViewById(R.id.player_media_extension);
         playerMediaBitrate = bind.getRoot().findViewById(R.id.player_media_bitrate);
+        playerMediaCodecBadge = bind.getRoot().findViewById(R.id.player_media_codec_badge);
         playerQuickActionView = bind.getRoot().findViewById(R.id.player_quick_action_view);
         playerOpenQueueButton = bind.getRoot().findViewById(R.id.player_open_queue_button);
         playerTrackInfo = bind.getRoot().findViewById(R.id.player_info_track);
@@ -206,13 +208,35 @@ public class PlayerControllerFragment extends Fragment {
             String bitrate = mediaMetadata.extras.getInt("bitrate", 0) != 0 ? mediaMetadata.extras.getInt("bitrate", 0) + "kbps" : "Original";
 
             playerMediaExtension.setText(extension);
-
             if (bitrate.equals("Original")) {
                 playerMediaBitrate.setVisibility(View.GONE);
             } else {
                 playerMediaBitrate.setVisibility(View.VISIBLE);
                 playerMediaBitrate.setText(bitrate);
             }
+            // Il codec ora sta nel badge accanto al titolo
+            playerMediaExtension.setVisibility(View.GONE);
+            String suffix = mediaMetadata.extras.getString("suffix", null);
+            int kbps = mediaMetadata.extras.getInt("bitrate", 0);
+            if ("mp3".equalsIgnoreCase(suffix) && kbps > 0) {
+                // Per gli MP3 basta il bitrate (il formato si dà per scontato)
+                setCodecBadge(kbps + " kbps");
+                playerMediaBitrate.setVisibility(View.GONE);
+            } else if (suffix != null && kbps > 0) {
+                // FLAC e gli altri formati: codec e, sotto in piccolo, il bitrate
+                String codec = suffix.toUpperCase(java.util.Locale.ROOT);
+                android.text.SpannableStringBuilder text = new android.text.SpannableStringBuilder(codec)
+                        .append("\n");
+                int start = text.length();
+                text.append(kbps + " kbps");
+                text.setSpan(new android.text.style.RelativeSizeSpan(0.75f), start, text.length(), 0);
+                text.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, codec.length(), 0);
+                setCodecBadge(text);
+                playerMediaBitrate.setVisibility(View.GONE);
+            } else {
+                setCodecBadge(suffix != null ? suffix.toUpperCase(java.util.Locale.ROOT) : null);
+            }
+
         }
 
         boolean isTranscodingExtension = !MusicUtil.getTranscodingFormatPreference().equals("raw");
@@ -221,12 +245,25 @@ public class PlayerControllerFragment extends Fragment {
         if (isTranscodingExtension || isTranscodingBitrate) {
             playerMediaExtension.setText("Transcoding");
             playerMediaBitrate.setText("requested");
+            if (isTranscodingExtension) {
+                setCodecBadge(MusicUtil.getTranscodingFormatPreference().toUpperCase(java.util.Locale.ROOT));
+            }
         }
 
         playerTrackInfo.setOnClickListener(view -> {
             TrackInfoDialog dialog = new TrackInfoDialog(mediaMetadata);
             dialog.show(activity.getSupportFragmentManager(), null);
         });
+    }
+
+    private void setCodecBadge(CharSequence codec) {
+        if (playerMediaCodecBadge == null) return;
+        if (codec == null || codec.toString().trim().isEmpty()) {
+            playerMediaCodecBadge.setVisibility(View.GONE);
+        } else {
+            playerMediaCodecBadge.setText(codec);
+            playerMediaCodecBadge.setVisibility(View.VISIBLE);
+        }
     }
 
     private void setMediaControllerUI(MediaBrowser mediaBrowser) {
