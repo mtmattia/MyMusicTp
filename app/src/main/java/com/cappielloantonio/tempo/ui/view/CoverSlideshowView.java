@@ -5,7 +5,9 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.util.AttributeSet;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
@@ -77,10 +79,24 @@ public class CoverSlideshowView extends FrameLayout {
     }
 
     private void load(ImageView view, String coverId) {
+        // Glide non accetta richieste per un'activity già chiusa (crash su alcuni telefoni)
+        if (!isContextAlive()) return;
         CustomGlideRequest.Builder
                 .from(getContext(), coverId, CustomGlideRequest.ResourceType.Album)
                 .build()
                 .into(view);
+    }
+
+    private boolean isContextAlive() {
+        Context c = getContext();
+        while (c instanceof ContextWrapper) {
+            if (c instanceof Activity) {
+                Activity a = (Activity) c;
+                return !a.isDestroyed() && !a.isFinishing();
+            }
+            c = ((ContextWrapper) c).getBaseContext();
+        }
+        return true;
     }
 
     private static void resetTransform(ImageView v) {
@@ -110,7 +126,7 @@ public class CoverSlideshowView extends FrameLayout {
     }
 
     private void slideToNext() {
-        if (covers.size() < 2 || getWidth() == 0) return;
+        if (covers.size() < 2 || getWidth() == 0 || !isAttachedToWindow() || !isContextAlive()) return;
         index = (index + 1) % covers.size();
 
         // La successiva entra da destra alla dimensione iniziale
@@ -129,8 +145,19 @@ public class CoverSlideshowView extends FrameLayout {
             back.setTranslationX(width * (1 - f));
         });
         anim.addListener(new AnimatorListenerAdapter() {
+            private boolean cancelled = false;
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                cancelled = true;
+            }
+
             @Override
             public void onAnimationEnd(Animator animation) {
+                // Annullata da stop() (vista staccata o copertine cambiate): non ripartire,
+                // altrimenti il prossimo passaggio girerebbe su un'activity ormai chiusa
+                if (cancelled || slide != animation) return;
+                slide = null;
                 ImageView old = swap();
                 old.setImageDrawable(null);
                 resetTransform(old);
